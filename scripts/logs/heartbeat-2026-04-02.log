@@ -1,0 +1,37 @@
+[2026-04-02 00:42:33] [INFO] ========== Daily Heartbeat Start ==========
+[2026-04-02 00:42:33] [INFO] Project: C:\Users\yuasano\OneDrive - Microsoft\Documents\02 Claude\12-qr-alarm-app
+[2026-04-02 00:42:33] [INFO] Step 1: TypeScript compilation check...
+[2026-04-02 00:42:36] [ERROR] TypeScript: FAIL (1 errors)
+[2026-04-02 00:42:36] [ERROR]   app/sounds.tsx(120,37): error TS2339: Property 'documentDirectory' does not exist on type 'typeof import("C:/Users/yuasano/OneDrive - Microsoft/Documents/02 Claude/12-qr-alarm-app/node_modules/expo-file-system/build/index")'.
+[2026-04-02 00:42:36] [INFO] Step 2: Expo doctor check...
+[2026-04-02 00:42:42] [INFO] Expo Doctor: PASS
+[2026-04-02 00:42:42] [INFO] Step 3: Checking remaining tasks...
+[2026-04-02 00:42:42] [INFO]   [TODO] Git repo initialization
+[2026-04-02 00:42:45] [INFO]   [TODO] Fix TypeScript FileSystem error
+[2026-04-02 00:42:45] [INFO]   [TODO] AdMob account + real Ad Unit IDs
+[2026-04-02 00:42:45] [INFO]   [TODO] Create privacy policy
+[2026-04-02 00:42:45] [INFO]   [TODO] App Store screenshots & metadata
+[2026-04-02 00:42:46] [INFO]   [TODO] EAS Build for iOS production
+[2026-04-02 00:42:46] [INFO]   [TODO] Submit to TestFlight
+[2026-04-02 00:42:46] [INFO]   [TODO] Google Play Console registration
+[2026-04-02 00:42:46] [INFO]   [TODO] EAS Build for Android production
+[2026-04-02 00:42:46] [INFO]   [TODO] Submit to Google Play Internal Testing
+[2026-04-02 00:42:46] [INFO]   [TODO] Configure EAS Update for OTA
+[2026-04-02 00:42:46] [INFO]   [TODO] End-to-end verification on devices
+[2026-04-02 00:42:46] [INFO] Completed: 0 / 12
+[2026-04-02 00:42:46] [INFO] Remaining: 12
+[2026-04-02 00:42:46] [INFO] Manual blockers: 6
+[2026-04-02 00:42:46] [INFO] Step 4: Syncing to Microsoft To Do...
+[2026-04-02 00:42:47] [INFO] To Do added: [ScanAlarm] Day 2/6 days left - 12 tasks remaining
+[2026-04-02 00:42:48] [INFO] To Do added: [ScanAlarm] AdMob account + real Ad Unit IDs
+[2026-04-02 00:42:49] [INFO] To Do added: [ScanAlarm] App Store screenshots & metadata
+[2026-04-02 00:42:50] [INFO] To Do added: [ScanAlarm] Submit to TestFlight
+[2026-04-02 00:42:51] [INFO] To Do added: [ScanAlarm] Google Play Console registration
+[2026-04-02 00:42:52] [INFO] To Do added: [ScanAlarm] Submit to Google Play Internal Testing
+[2026-04-02 00:42:53] [INFO] To Do added: [ScanAlarm] End-to-end verification on devices
+[2026-04-02 00:42:53] [INFO] ========== Heartbeat Summary ==========
+[2026-04-02 00:42:53] [INFO] Sprint Day: 2 / 7 (6 days left)
+[2026-04-02 00:42:53] [INFO] Tasks: 0 done, 12 remaining
+[2026-04-02 00:42:53] [INFO] Manual blockers: 6
+[2026-04-02 00:42:53] [WARN] ACTION NEEDED: Fix 1 TypeScript errors
+[2026-04-02 00:42:53] [INFO] ========== Heartbeat End ==========

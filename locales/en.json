@@ -1,0 +1,5 @@
+{
+  "CFBundleDisplayName": "ScanAlarm",
+  "NSCameraUsageDescription": "Camera access is needed to scan QR codes and barcodes to dismiss your alarm",
+  "NSUserTrackingUsageDescription": "Allow tracking to personalize ads"
+}

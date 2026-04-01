@@ -1,0 +1,5 @@
+{
+  "CFBundleDisplayName": "ScanAlarm",
+  "NSCameraUsageDescription": "알람을 해제하기 위해 QR코드 및 바코드를 스캔하려면 카메라 접근 권한이 필요합니다",
+  "NSUserTrackingUsageDescription": "맞춤 광고를 위해 추적을 허용해 주세요"
+}

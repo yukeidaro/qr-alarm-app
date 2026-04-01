@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+
+# MCP config (contains API tokens)
+.copilot/mcp.json

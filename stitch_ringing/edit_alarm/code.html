@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ja"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "error": "#ffb4ab",
+              "tertiary": "#ffb7b6",
+              "outline": "#9c8e82",
+              "on-primary-fixed": "#2c1700",
+              "on-error-container": "#ffdad6",
+              "on-tertiary": "#581b1e",
+              "on-surface-variant": "#d4c4b7",
+              "primary-container": "#d4a574",
+              "inverse-on-surface": "#313030",
+              "outline-variant": "#50453b",
+              "tertiary-fixed": "#ffdad9",
+              "secondary-fixed-dim": "#cdc5bf",
+              "on-error": "#690005",
+              "error-container": "#93000a",
+              "surface-container": "#201f1f",
+              "surface-container-highest": "#353534",
+              "surface-container-lowest": "#0e0e0e",
+              "secondary-container": "#4b4641",
+              "on-primary-fixed-variant": "#614018",
+              "surface": "#131313",
+              "on-tertiary-fixed": "#3c060b",
+              "tertiary-container": "#f09594",
+              "on-primary-container": "#5b3a13",
+              "background": "#131313",
+              "surface-container-low": "#1c1b1b",
+              "surface-tint": "#efbd8a",
+              "on-tertiary-container": "#6e2c2e",
+              "surface-bright": "#3a3939",
+              "on-background": "#e5e2e1",
+              "on-primary": "#472a03",
+              "surface-container-high": "#2a2a2a",
+              "on-secondary-fixed": "#1f1b17",
+              "on-tertiary-fixed-variant": "#753133",
+              "inverse-primary": "#7c572d",
+              "on-surface": "#e5e2e1",
+              "surface-dim": "#131313",
+              "inverse-surface": "#e5e2e1",
+              "secondary-fixed": "#eae1da",
+              "on-secondary-container": "#bcb4ae",
+              "on-secondary-fixed-variant": "#4b4641",
+              "primary-fixed": "#ffdcbc",
+              "tertiary-fixed-dim": "#ffb3b2",
+              "primary-fixed-dim": "#efbd8a",
+              "on-secondary": "#34302b",
+              "primary": "#f2c08d",
+              "surface-variant": "#353534",
+              "secondary": "#cdc5bf"
+            },
+            fontFamily: {
+              "headline": ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+              "body": ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+              "label": ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      .time-picker-gradient {
+        background: linear-gradient(180deg, #131313 0%, rgba(19, 19, 19, 0) 40%, rgba(19, 19, 19, 0) 60%, #131313 100%);
+      }
+      body {
+        min-height: max(884px, 100dvh);
+      }
+    </style>
+</head>
+<body class="bg-surface-dim text-on-surface font-body min-h-screen selection:bg-primary/30">
+<!-- Top Navigation Anchor -->
+<header class="flex justify-between items-center w-full px-10 h-16 bg-[#0A0A0A] fixed top-0 z-40">
+<button class="flex items-center gap-1 text-[#D4A574] hover:opacity-80 transition-opacity active:scale-95 duration-300">
+<span class="material-symbols-outlined text-lg">chevron_left</span>
+<span class="font-headline font-light tracking-widest text-sm">戻る</span>
+</button>
+<h1 class="text-xs tracking-[0.2em] font-headline font-light text-[#6B6560]">アラーム編集</h1>
+<div class="w-10"></div> <!-- Spacer for symmetry -->
+</header>
+<main class="pt-24 pb-32 px-10 max-w-lg mx-auto space-y-12">
+<!-- Hero Time Picker Section -->
+<section class="relative h-64 flex items-center justify-center overflow-hidden">
+<!-- Simulated Scrollable Wheel -->
+<div class="flex items-center gap-4 relative z-10">
+<!-- Hours -->
+<div class="flex flex-col items-center gap-6 opacity-40">
+<span class="text-4xl font-headline font-thin tracking-tighter">05</span>
+<span class="text-4xl font-headline font-thin tracking-tighter">06</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="text-7xl font-headline font-thin tracking-tighter text-on-surface leading-none">07</span>
+</div>
+<div class="flex flex-col items-center gap-6 opacity-40">
+<span class="text-4xl font-headline font-thin tracking-tighter">08</span>
+<span class="text-4xl font-headline font-thin tracking-tighter">09</span>
+</div>
+<span class="text-5xl font-headline font-thin text-primary pb-2">:</span>
+<!-- Minutes -->
+<div class="flex flex-col items-center gap-6 opacity-40">
+<span class="text-4xl font-headline font-thin tracking-tighter">28</span>
+<span class="text-4xl font-headline font-thin tracking-tighter">29</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="text-7xl font-headline font-thin tracking-tighter text-on-surface leading-none">30</span>
+</div>
+<div class="flex flex-col items-center gap-6 opacity-40">
+<span class="text-4xl font-headline font-thin tracking-tighter">31</span>
+<span class="text-4xl font-headline font-thin tracking-tighter">32</span>
+</div>
+</div>
+<!-- Vignette Overlays -->
+<div class="absolute inset-0 pointer-events-none time-picker-gradient z-20"></div>
+<!-- Center Indicator (Ghost Border) -->
+<div class="absolute w-full h-20 border-y border-outline-variant/15 pointer-events-none"></div>
+</section>
+<!-- Repeat Section -->
+<section class="space-y-4">
+<h2 class="text-[10px] tracking-[0.25em] font-headline font-light text-[#6B6560] uppercase">くりかえし</h2>
+<div class="flex justify-between items-center">
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-[#201F1F] text-[#6B6560] text-xs font-medium hover:bg-surface-container transition-colors">日</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-[#D4A574] text-on-background text-xs font-medium shadow-lg shadow-primary/10">月</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-[#D4A574] text-on-background text-xs font-medium shadow-lg shadow-primary/10">火</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-[#D4A574] text-on-background text-xs font-medium shadow-lg shadow-primary/10">水</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-[#D4A574] text-on-background text-xs font-medium shadow-lg shadow-primary/10">木</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-[#D4A574] text-on-background text-xs font-medium shadow-lg shadow-primary/10">金</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-[#201F1F] text-[#6B6560] text-xs font-medium hover:bg-surface-container transition-colors">土</button>
+</div>
+</section>
+<!-- Sound Section -->
+<section class="space-y-4">
+<h2 class="text-[10px] tracking-[0.25em] font-headline font-light text-[#6B6560] uppercase">サウンド</h2>
+<div class="group cursor-pointer flex justify-between items-center py-4 px-6 bg-surface-container-low rounded-lg hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-sm">music_note</span>
+<span class="text-sm font-light text-on-surface">Gentle Morning</span>
+</div>
+<span class="material-symbols-outlined text-[#6B6560] group-hover:translate-x-1 transition-transform">chevron_right</span>
+</div>
+</section>
+<!-- QR / Barcode Status -->
+<section class="space-y-4">
+<h2 class="text-[10px] tracking-[0.25em] font-headline font-light text-[#6B6560] uppercase">QR / バーコード</h2>
+<div class="flex items-center justify-between py-4 px-6 border border-outline-variant/15 rounded-lg">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">qr_code_2</span>
+<span class="text-sm font-light text-on-surface-variant">✓ 登録済み</span>
+</div>
+<span class="text-[10px] text-[#6B6560] font-headline font-light uppercase tracking-wider">Kitchen Counter</span>
+</div>
+</section>
+<!-- Footer Actions -->
+<footer class="pt-8 space-y-8">
+<button class="w-full py-5 bg-[#D4A574] text-on-background font-headline font-medium tracking-[0.1em] rounded-full hover:opacity-90 active:scale-[0.98] transition-all shadow-xl shadow-primary/5">
+                保存
+            </button>
+<div class="flex justify-center">
+<button class="text-[#C47070] text-sm font-headline font-medium tracking-widest hover:opacity-70 transition-opacity">
+                    アラームを削除
+                </button>
+</div>
+</footer>
+</main>
+<!-- Bottom Sheet Modal (Sound Picker Simulation) -->
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end justify-center invisible">
+<div class="w-full max-w-md bg-surface-container-high rounded-t-xl p-10 space-y-8 translate-y-full transition-transform duration-500 shadow-2xl">
+<div class="flex justify-between items-center">
+<h3 class="text-sm font-headline font-light tracking-[0.2em] text-[#6B6560]">サウンドを選択</h3>
+<span class="material-symbols-outlined text-[#6B6560] cursor-pointer">close</span>
+</div>
+<ul class="space-y-2">
+<li class="flex items-center justify-between p-4 rounded-lg bg-surface-variant/20 border border-primary/20">
+<span class="text-[#D4A574] text-sm tracking-wide font-light">Gentle</span>
+<span class="material-symbols-outlined text-[#D4A574] text-lg" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</li>
+<li class="flex items-center justify-between p-4 rounded-lg hover:bg-surface-variant/10 transition-colors">
+<span class="text-on-surface-variant text-sm tracking-wide font-light">Digital</span>
+<div class="w-5 h-5 rounded-full border border-outline-variant"></div>
+</li>
+<li class="flex items-center justify-between p-4 rounded-lg hover:bg-surface-variant/10 transition-colors">
+<span class="text-on-surface-variant text-sm tracking-wide font-light">Nature</span>
+<div class="w-5 h-5 rounded-full border border-outline-variant"></div>
+</li>
+<li class="flex items-center justify-between p-4 rounded-lg hover:bg-surface-variant/10 transition-colors">
+<span class="text-on-surface-variant text-sm tracking-wide font-light">Urgent</span>
+<div class="w-5 h-5 rounded-full border border-outline-variant"></div>
+</li>
+</ul>
+<button class="w-full py-4 bg-surface-container-highest text-on-surface font-headline font-medium rounded-full text-sm">
+                閉じる
+            </button>
+</div>
+</div>
+</body></html>

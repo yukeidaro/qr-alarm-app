@@ -1,0 +1,72 @@
+{
+  "expo": {
+    "name": "ScanAlarm",
+    "slug": "qr-alarm-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#F5F0EB"
+    },
+    "locales": {
+      "ja": "./locales/ja.json",
+      "en": "./locales/en.json",
+      "ko": "./locales/ko.json",
+      "es": "./locales/es.json"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yuasano.qralarm",
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "ja",
+        "CFBundleLocalizations": ["ja", "en", "ko", "es"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F5F0EB"
+      },
+      "package": "com.yuasano.qralarm"
+    },
+    "scheme": "qralarm",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "QRコード・バーコードをスキャンしてアラームを解除するためにカメラへのアクセスが必要です"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
+      ],
+      "expo-font",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "広告のパーソナライズのためにトラッキングを許可してください"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "expo-localization"
+    ]
+  }
+}

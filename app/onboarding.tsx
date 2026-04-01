@@ -1,0 +1,442 @@
+import { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Platform,
+  Linking,
+  KeyboardAvoidingView,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
+import * as Haptics from 'expo-haptics';
+import {
+  BG_PRIMARY, BG_SECONDARY, BG_TERTIARY,
+  ACCENT_PRIMARY, ACCENT_PRIMARY_TEXT, TEXT_PRIMARY,
+  TEXT_MUTED, TEXT_SECONDARY, OVERLAY, ACCENT_SUBTLE,
+} from '../constants/colors';
+import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
+import { SPACING, SCREEN_PADDING, RADIUS, ACTIVE_OPACITY } from '../constants/spacing';
+import { t } from '../i18n';
+
+const ONBOARDING_KEY = '@qralarm/onboarding_done';
+const NAME_KEY = '@qralarm/user_name';
+
+type Step = 'welcome' | 'permissions' | 'ready';
+
+export default function OnboardingScreen() {
+  const router = useRouter();
+  const [step, setStep] = useState<Step>('welcome');
+  const [name, setName] = useState('');
+  const [notifGranted, setNotifGranted] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    animateIn();
+  }, []);
+
+  const animateIn = () => {
+    fadeAnim.setValue(0);
+    slideAnim.setValue(30);
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const goToStep = (next: Step) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setStep(next);
+      animateIn();
+    });
+  };
+
+  const handleNameDone = async () => {
+    if (name.trim()) {
+      await AsyncStorage.setItem(NAME_KEY, name.trim());
+    }
+    goToStep('permissions');
+  };
+
+  const handleRequestNotifications = async () => {
+    const { status } = await Notifications.requestPermissionsAsync();
+    const granted = status === 'granted';
+    setNotifGranted(granted);
+    Haptics.notificationAsync(
+      granted ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
+    );
+  };
+
+  const handleOpenSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings();
+    }
+  };
+
+  const handleFinish = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    router.replace('/');
+  };
+
+  const handleSkipToHome = async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    router.replace('/');
+  };
+
+  const renderWelcome = () => (
+    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <Text style={styles.stepEmoji}>{'  '}</Text>
+      <Text style={styles.title}>{t.onboardingFlow.welcomeTitle}</Text>
+      <Text style={styles.subtitle}>{t.onboardingFlow.welcomeSubtitle}</Text>
+
+      <View style={styles.inputCard}>
+        <Text style={styles.inputLabel}>{t.onboardingFlow.nameLabel}</Text>
+        <TextInput
+          style={styles.textInput}
+          value={name}
+          onChangeText={setName}
+          placeholder={t.onboardingFlow.namePlaceholder}
+          placeholderTextColor={TEXT_MUTED}
+          autoFocus
+          returnKeyType="done"
+          onSubmitEditing={handleNameDone}
+        />
+      </View>
+
+      <TouchableOpacity style={styles.primaryButton} onPress={handleNameDone} activeOpacity={ACTIVE_OPACITY.default}>
+        <Text style={styles.primaryButtonText}>{t.onboardingFlow.next}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => goToStep('permissions')} activeOpacity={ACTIVE_OPACITY.default}>
+        <Text style={styles.skipText}>{t.onboardingFlow.skip}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
+  const renderPermissions = () => (
+    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <Text style={styles.stepEmoji}>{'  '}</Text>
+      <Text style={styles.title}>{t.onboardingFlow.permissionsTitle}</Text>
+      <Text style={styles.subtitle}>{t.onboardingFlow.permissionsSubtitle}</Text>
+
+      {/* Notification permission */}
+      <View style={styles.permissionCard}>
+        <View style={styles.permissionRow}>
+          <View style={styles.permissionInfo}>
+            <Text style={styles.permissionTitle}>{t.onboardingFlow.notificationTitle}</Text>
+            <Text style={styles.permissionDesc}>{t.onboardingFlow.notificationDesc}</Text>
+          </View>
+          {notifGranted ? (
+            <View style={styles.grantedBadge}>
+              <Text style={styles.grantedText}>OK</Text>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.grantButton} onPress={handleRequestNotifications} activeOpacity={ACTIVE_OPACITY.default}>
+              <Text style={styles.grantButtonText}>{t.onboardingFlow.allow}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Sound settings tip */}
+      <View style={styles.tipCard}>
+        <Text style={styles.tipTitle}>{t.onboardingFlow.soundTipTitle}</Text>
+        <Text style={styles.tipDesc}>{t.onboardingFlow.soundTipDesc}</Text>
+        {Platform.OS === 'android' && (
+          <TouchableOpacity onPress={handleOpenSettings} activeOpacity={ACTIVE_OPACITY.default}>
+            <Text style={styles.tipLink}>{t.onboardingFlow.openSettings}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <TouchableOpacity style={styles.primaryButton} onPress={() => goToStep('ready')} activeOpacity={ACTIVE_OPACITY.default}>
+        <Text style={styles.primaryButtonText}>{t.onboardingFlow.next}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
+  const renderReady = () => (
+    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <Text style={styles.stepEmoji}>{'  '}</Text>
+      <Text style={styles.title}>{t.onboardingFlow.readyTitle}</Text>
+      <Text style={styles.subtitle}>
+        {name.trim()
+          ? t.onboardingFlow.readySubtitleName(name.trim())
+          : t.onboardingFlow.readySubtitle}
+      </Text>
+
+      <View style={styles.checklistCard}>
+        <View style={styles.checkItem}>
+          <Text style={styles.checkIcon}>{'*'}</Text>
+          <Text style={styles.checkText}>{t.onboardingFlow.tipQr}</Text>
+        </View>
+        <View style={styles.checkItem}>
+          <Text style={styles.checkIcon}>{'*'}</Text>
+          <Text style={styles.checkText}>{t.onboardingFlow.tipSound}</Text>
+        </View>
+        <View style={styles.checkItem}>
+          <Text style={styles.checkIcon}>{'*'}</Text>
+          <Text style={styles.checkText}>{t.onboardingFlow.tipSnooze}</Text>
+        </View>
+      </View>
+
+      <TouchableOpacity style={styles.primaryButton} onPress={handleFinish} activeOpacity={ACTIVE_OPACITY.default}>
+        <Text style={styles.primaryButtonText}>{t.onboardingFlow.start}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
+  // Step indicator
+  const steps: Step[] = ['welcome', 'permissions', 'ready'];
+  const currentIndex = steps.indexOf(step);
+
+  return (
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Skip button */}
+      <TouchableOpacity style={styles.skipButton} onPress={handleSkipToHome} activeOpacity={ACTIVE_OPACITY.default}>
+        <Text style={styles.skipButtonText}>{t.onboardingFlow.skip}</Text>
+      </TouchableOpacity>
+
+      {/* Step dots */}
+      <View style={styles.dotsRow}>
+        {steps.map((s, i) => (
+          <View key={s} style={[styles.dot, i === currentIndex && styles.dotActive]} />
+        ))}
+      </View>
+
+      {/* Content */}
+      {step === 'welcome' && renderWelcome()}
+      {step === 'permissions' && renderPermissions()}
+      {step === 'ready' && renderReady()}
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: BG_PRIMARY,
+  },
+
+  // Skip
+  skipButton: {
+    position: 'absolute',
+    top: SPACING['7xl'],
+    right: SCREEN_PADDING.horizontal,
+    zIndex: 10,
+    padding: SPACING.sm,
+  },
+  skipButtonText: {
+    fontSize: FONT_SIZE.bodySmall,
+    color: TEXT_MUTED,
+    fontFamily: FONT_FAMILY.medium,
+  },
+
+  // Dots
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    paddingTop: SPACING['7xl'],
+    marginBottom: SPACING.xl,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: BG_TERTIARY,
+  },
+  dotActive: {
+    backgroundColor: ACCENT_PRIMARY,
+    width: 24,
+  },
+
+  // Step
+  stepContainer: {
+    flex: 1,
+    paddingHorizontal: SCREEN_PADDING.horizontal,
+    alignItems: 'center',
+    paddingTop: SPACING['5xl'],
+  },
+  stepEmoji: {
+    fontSize: 48,
+    marginBottom: SPACING.xl,
+  },
+  title: {
+    fontSize: FONT_SIZE.heading2,
+    fontFamily: FONT_FAMILY.bold,
+    color: TEXT_PRIMARY,
+    textAlign: 'center',
+    marginBottom: SPACING.base,
+  },
+  subtitle: {
+    fontSize: FONT_SIZE.bodySmall,
+    fontFamily: FONT_FAMILY.regular,
+    color: TEXT_MUTED,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: SPACING['4xl'],
+  },
+
+  // Name input
+  inputCard: {
+    width: '100%',
+    backgroundColor: BG_SECONDARY,
+    borderRadius: RADIUS.base,
+    padding: SPACING.xl,
+    marginBottom: SPACING.xxl,
+  },
+  inputLabel: {
+    fontSize: FONT_SIZE.labelSmall,
+    fontFamily: FONT_FAMILY.medium,
+    color: TEXT_MUTED,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: SPACING.sm,
+  },
+  textInput: {
+    fontSize: FONT_SIZE.heading3,
+    fontFamily: FONT_FAMILY.semiBold,
+    color: TEXT_PRIMARY,
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 2,
+    borderBottomColor: ACCENT_PRIMARY,
+  },
+
+  // Buttons
+  primaryButton: {
+    width: '100%',
+    backgroundColor: ACCENT_PRIMARY,
+    paddingVertical: SPACING.lg,
+    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  primaryButtonText: {
+    fontSize: FONT_SIZE.body,
+    fontFamily: FONT_FAMILY.semiBold,
+    color: ACCENT_PRIMARY_TEXT,
+  },
+  skipText: {
+    fontSize: FONT_SIZE.bodySmall,
+    fontFamily: FONT_FAMILY.regular,
+    color: TEXT_MUTED,
+    paddingVertical: SPACING.sm,
+  },
+
+  // Permission card
+  permissionCard: {
+    width: '100%',
+    backgroundColor: BG_SECONDARY,
+    borderRadius: RADIUS.base,
+    padding: SPACING.xl,
+    marginBottom: SPACING.lg,
+  },
+  permissionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  permissionInfo: {
+    flex: 1,
+    marginRight: SPACING.lg,
+  },
+  permissionTitle: {
+    fontSize: FONT_SIZE.bodySmall,
+    fontFamily: FONT_FAMILY.semiBold,
+    color: TEXT_PRIMARY,
+    marginBottom: SPACING.xxs,
+  },
+  permissionDesc: {
+    fontSize: FONT_SIZE.label,
+    fontFamily: FONT_FAMILY.regular,
+    color: TEXT_MUTED,
+    lineHeight: 18,
+  },
+  grantButton: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    backgroundColor: ACCENT_PRIMARY,
+  },
+  grantButtonText: {
+    fontSize: FONT_SIZE.label,
+    fontFamily: FONT_FAMILY.semiBold,
+    color: ACCENT_PRIMARY_TEXT,
+  },
+  grantedBadge: {
+    paddingHorizontal: SPACING.base,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+    backgroundColor: OVERLAY.accent10,
+  },
+  grantedText: {
+    fontSize: FONT_SIZE.label,
+    fontFamily: FONT_FAMILY.semiBold,
+    color: ACCENT_SUBTLE,
+  },
+
+  // Tip card
+  tipCard: {
+    width: '100%',
+    backgroundColor: BG_SECONDARY,
+    borderRadius: RADIUS.base,
+    padding: SPACING.xl,
+    marginBottom: SPACING.xxl,
+  },
+  tipTitle: {
+    fontSize: FONT_SIZE.bodySmall,
+    fontFamily: FONT_FAMILY.semiBold,
+    color: TEXT_PRIMARY,
+    marginBottom: SPACING.xs,
+  },
+  tipDesc: {
+    fontSize: FONT_SIZE.label,
+    fontFamily: FONT_FAMILY.regular,
+    color: TEXT_MUTED,
+    lineHeight: 18,
+  },
+  tipLink: {
+    fontSize: FONT_SIZE.label,
+    fontFamily: FONT_FAMILY.medium,
+    color: ACCENT_SUBTLE,
+    marginTop: SPACING.sm,
+  },
+
+  // Checklist
+  checklistCard: {
+    width: '100%',
+    backgroundColor: BG_SECONDARY,
+    borderRadius: RADIUS.base,
+    padding: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    gap: SPACING.lg,
+  },
+  checkItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.base,
+  },
+  checkIcon: {
+    fontSize: FONT_SIZE.bodySmall,
+    color: ACCENT_PRIMARY,
+    fontFamily: FONT_FAMILY.bold,
+    marginTop: 1,
+  },
+  checkText: {
+    flex: 1,
+    fontSize: FONT_SIZE.bodySmall,
+    fontFamily: FONT_FAMILY.regular,
+    color: TEXT_SECONDARY,
+    lineHeight: 22,
+  },
+});
