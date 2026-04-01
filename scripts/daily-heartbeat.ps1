@@ -107,6 +107,17 @@ try {
 # ─── 3. Task Inventory ───
 Write-Log "Step 3: Checking remaining tasks..."
 
+# Day-to-task mapping for To Do notes
+$dayGuide = @{
+    "apple-dev-pay"      = "Day 1 (4/1)"
+    "google-play-register" = "Day 2 (4/2)"
+    "admob-account"      = "Day 3 (4/3)"
+    "app-store-assets"   = "Day 4 (4/4)"
+    "testflight-submit"  = "Day 5-6 (4/5-6)"
+    "play-store-submit"  = "Day 5-6 (4/5-6)"
+    "final-verification" = "Day 7 (4/8)"
+}
+
 # Define all Phase 8 tasks with verification logic
 $taskChecks = @(
     @{
@@ -125,6 +136,12 @@ $taskChecks = @(
             return $LASTEXITCODE -eq 0
         }
         ManualOnly  = $false
+    },
+    @{
+        Id          = "apple-dev-pay"
+        Title       = "Apple Developer Program 支払い"
+        Check       = { $false } # Manual — check via heartbeat confirmation
+        ManualOnly  = $true
     },
     @{
         Id          = "admob-account"
@@ -301,15 +318,22 @@ foreach ($task in $remainingTasks) {
             continue
         }
         $dueDate = switch ($task.Id) {
+            "apple-dev-pay"       { "2026-04-01" }
+            "google-play-register"{ "2026-04-02" }
             "admob-account"       { "2026-04-03" }
             "app-store-assets"    { "2026-04-04" }
-            "google-play-register"{ "2026-04-05" }
             "testflight-submit"   { "2026-04-06" }
             "play-store-submit"   { "2026-04-07" }
             "final-verification"  { "2026-04-08" }
             default               { "" }
         }
-        Add-TodoTask -Title $taskTitle -Due $dueDate
+        # Add guide reference in note
+        $guideDay = $dayGuide[$task.Id]
+        $taskNote = ""
+        if ($guideDay) {
+            $taskNote = "詳細手順: output\yu-action-guide.md の $guideDay を参照"
+        }
+        Add-TodoTask -Title $taskTitle -Note $taskNote -Due $dueDate
     }
 }
 

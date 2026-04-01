@@ -105,6 +105,11 @@ export const es = {
     cameraRequired: 'Se necesita acceso a la cámara',
     allowCamera: 'Permitir',
     countdown: (seconds: number) => `${seconds}s restantes`,
+    scannedNamePrompt: 'Escaneado. Ponle un nombre.',
+    nameTitle: 'Nombrar este codigo',
+    nameDesc: 'Ponle un nombre para saber que codigo escanear para cada alarma.',
+    namePlaceholder: 'ej. Libro, Taza...',
+    save: 'Guardar',
   },
 
   snooze: {
@@ -116,6 +121,36 @@ export const es = {
     registerQr: 'Registra QR para desactivar',
     hintQr: 'Escanea para desactivar completamente la alarma',
     hintNoQr: 'Registra un QR / código de barras para desactivar',
+  },
+
+  dismissMessages: {
+    general: [
+      '!Buenos dias! Que tengas un gran dia.',
+      '!Arriba! Hoy sera un gran dia.',
+      '!Lo lograste! A empezar el dia.',
+      'Otra manana conquistada.',
+      '!Buenos dias! El mundo te espera.',
+      '!Bien hecho! Haz que hoy cuente.',
+      '!Buenos dias! Tu puedes.',
+      'Un nuevo dia, un nuevo comienzo.',
+      '!Buenos dias! Algo bueno viene.',
+      '!Despertaste! Ese es el primer paso.',
+      '!Hola, persona matutina!',
+      '!Gran comienzo! Sigue asi.',
+      '!Buenos dias! Se increible hoy.',
+      '!Dia desbloqueado! A darlo todo.',
+      '!Vas muy bien! No pares.',
+      'Otro dia, otra oportunidad.',
+      '!Buenos dias! Sin prisa, sin pausa.',
+      '!Madrugaste! Eso merece un cafe.',
+      '!Buenos dias! Hoy pinta bien.',
+      '!A por todas! Hoy es tu dia.',
+    ],
+    streak: (days: number) => [
+      `!${days} dias seguidos! !Sigue asi!`,
+      `!Racha de ${days} dias! Imparable.`,
+      `!Dia ${days}! Gran habito.`,
+    ],
   },
 
   notification: {

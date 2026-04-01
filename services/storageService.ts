@@ -15,9 +15,16 @@ export interface Alarm {
 
 const ALARMS_KEY = '@qralarm/alarms';
 const QR_KEY = '@qralarm/registered_qr';
+const QR_LIST_KEY = '@qralarm/registered_qrs';
 const CUSTOM_SOUNDS_KEY = '@qralarm/custom_sounds';
 const RINGING_BG_KEY = '@qralarm/ringing_bg';
 const SNOOZE_COUNT_KEY = '@qralarm/snooze_count';
+
+export interface RegisteredQR {
+  id: string;
+  name: string;
+  data: string; // barcode/QR raw data
+}
 
 export interface CustomSound {
   id: string;
@@ -66,12 +73,54 @@ export async function deleteAlarm(id: string): Promise<void> {
   await saveAlarms(alarms.filter((a) => a.id !== id));
 }
 
+// Legacy single QR (backward compat)
 export async function getRegisteredQR(): Promise<string | null> {
+  // Check new multi-QR first, fall back to legacy
+  const qrs = await getRegisteredQRs();
+  if (qrs.length > 0) return qrs[0].data;
   return AsyncStorage.getItem(QR_KEY);
 }
 
 export async function saveRegisteredQR(data: string): Promise<void> {
   await AsyncStorage.setItem(QR_KEY, data);
+}
+
+// Multi-QR support
+export async function getRegisteredQRs(): Promise<RegisteredQR[]> {
+  const raw = await AsyncStorage.getItem(QR_LIST_KEY);
+  if (raw) return JSON.parse(raw);
+  // Migrate legacy single QR if exists
+  const legacy = await AsyncStorage.getItem(QR_KEY);
+  if (legacy) {
+    const migrated: RegisteredQR[] = [{ id: 'legacy', name: 'QR', data: legacy }];
+    await AsyncStorage.setItem(QR_LIST_KEY, JSON.stringify(migrated));
+    return migrated;
+  }
+  return [];
+}
+
+export async function saveRegisteredQRItem(qr: RegisteredQR): Promise<void> {
+  const qrs = await getRegisteredQRs();
+  qrs.push(qr);
+  await AsyncStorage.setItem(QR_LIST_KEY, JSON.stringify(qrs));
+  // Also update legacy key for backward compat
+  await AsyncStorage.setItem(QR_KEY, qr.data);
+}
+
+export async function deleteRegisteredQR(id: string): Promise<void> {
+  const qrs = await getRegisteredQRs();
+  const filtered = qrs.filter((q) => q.id !== id);
+  await AsyncStorage.setItem(QR_LIST_KEY, JSON.stringify(filtered));
+  if (filtered.length > 0) {
+    await AsyncStorage.setItem(QR_KEY, filtered[0].data);
+  } else {
+    await AsyncStorage.removeItem(QR_KEY);
+  }
+}
+
+export async function getRegisteredQRById(id: string): Promise<RegisteredQR | null> {
+  const qrs = await getRegisteredQRs();
+  return qrs.find((q) => q.id === id) || null;
 }
 
 export async function getCustomSounds(): Promise<CustomSound[]> {
@@ -104,6 +153,41 @@ export async function saveRingingBackground(uri: string): Promise<void> {
 
 export async function clearRingingBackground(): Promise<void> {
   await AsyncStorage.removeItem(RINGING_BG_KEY);
+}
+
+// Dismiss streak tracking
+const DISMISS_STREAK_KEY = '@qralarm/dismiss_streak';
+const LAST_DISMISS_DATE_KEY = '@qralarm/last_dismiss_date';
+
+export async function getDismissStreak(): Promise<number> {
+  const raw = await AsyncStorage.getItem(DISMISS_STREAK_KEY);
+  return raw ? parseInt(raw, 10) : 0;
+}
+
+export async function recordDismiss(): Promise<number> {
+  const today = new Date().toDateString();
+  const lastDate = await AsyncStorage.getItem(LAST_DISMISS_DATE_KEY);
+
+  let streak = await getDismissStreak();
+
+  if (lastDate === today) {
+    // Already dismissed today, don't increment
+    return streak;
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (lastDate === yesterday.toDateString()) {
+    // Consecutive day
+    streak += 1;
+  } else {
+    // Streak broken or first dismiss
+    streak = 1;
+  }
+
+  await AsyncStorage.setItem(DISMISS_STREAK_KEY, streak.toString());
+  await AsyncStorage.setItem(LAST_DISMISS_DATE_KEY, today);
+  return streak;
 }
 
 // Snooze count tracking (per alarm instance)

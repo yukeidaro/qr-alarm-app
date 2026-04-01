@@ -117,6 +117,11 @@ export const en = {
     cameraRequired: 'Camera access is required',
     allowCamera: 'Allow',
     countdown: (seconds: number) => `${seconds}s remaining`,
+    scannedNamePrompt: 'Scanned! Give it a name.',
+    nameTitle: 'Name this code',
+    nameDesc: 'Give it a name so you know which code to scan for each alarm.',
+    namePlaceholder: 'e.g. Bedroom book, Mug...',
+    save: 'Save',
   },
 
   // Snooze
@@ -129,6 +134,37 @@ export const en = {
     registerQr: 'Register QR to dismiss',
     hintQr: 'Scan to fully dismiss the alarm',
     hintNoQr: 'Register a QR / barcode to dismiss',
+  },
+
+  // Dismiss celebration messages
+  dismissMessages: {
+    general: [
+      'Good morning! Have a great day.',
+      'Rise and shine!',
+      'You did it! Time to start the day.',
+      'Another morning conquered.',
+      'Up and at it! Today is yours.',
+      'Morning! The world is waiting.',
+      'Well done! Make today count.',
+      'Bright-eyed and ready to go!',
+      'Good morning! You got this.',
+      'A new day, a fresh start.',
+      'Morning! Something good is coming.',
+      'You woke up! That is step one.',
+      'Hello, morning person!',
+      'Great start! Keep it going.',
+      'Up before the snooze? Impressive.',
+      'Good morning! Stay awesome.',
+      'The early bird wins. That is you.',
+      'Day unlocked. Go make it count.',
+      'You are on a roll. Keep it up!',
+      'Another day, another chance.',
+    ],
+    streak: (days: number) => [
+      `${days} days in a row! Keep it up!`,
+      `${days}-day streak! You are unstoppable.`,
+      `Day ${days}! Building a great habit.`,
+    ],
   },
 
   // Notifications
