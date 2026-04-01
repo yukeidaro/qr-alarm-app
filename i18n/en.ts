@@ -160,6 +160,18 @@ export const en = {
       'You are on a roll. Keep it up!',
       'Another day, another chance.',
     ],
+    noSnooze: [
+      'No snooze? You are a champion.',
+      'First try! That takes discipline.',
+      'Straight up, no snooze. Respect.',
+      'Zero snoozes. Who even are you?',
+    ],
+    snoozed: [
+      'Took a few tries, but you made it!',
+      'The snooze button fought hard. You won.',
+      'Better late than never! Go get them.',
+      'You are up now. That is what counts.',
+    ],
     streak: (days: number) => [
       `${days} days in a row! Keep it up!`,
       `${days}-day streak! You are unstoppable.`,

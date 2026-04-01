@@ -129,13 +129,22 @@ export default function ScanScreen() {
           await resetSnoozeCount(alarmId);
           await clearSnoozeTime(alarmId);
         }
-        // Record streak and show celebration
+        // Record streak and pick context-aware message
         const streak = await recordDismiss();
+        const snoozeCount = alarmId ? await getSnoozeCount(alarmId) : 0;
         const msgs = t.dismissMessages;
         let msg: string;
-        if (streak >= 2 && Math.random() < 0.5) {
+        if (snoozeCount === 0 && Math.random() < 0.3) {
+          // No snooze used - pick from noSnooze messages
+          const pool = msgs.noSnooze;
+          msg = pool[Math.floor(Math.random() * pool.length)];
+        } else if (streak >= 2 && Math.random() < 0.5) {
           const streakMsgs = msgs.streak(streak);
           msg = streakMsgs[Math.floor(Math.random() * streakMsgs.length)];
+        } else if (snoozeCount >= 2) {
+          // Heavy snooze - pick from snoozed messages
+          const pool = msgs.snoozed;
+          msg = pool[Math.floor(Math.random() * pool.length)];
         } else {
           msg = msgs.general[Math.floor(Math.random() * msgs.general.length)];
         }

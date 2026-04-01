@@ -146,6 +146,18 @@ export const es = {
       '!Buenos dias! Hoy pinta bien.',
       '!A por todas! Hoy es tu dia.',
     ],
+    noSnooze: [
+      'Sin repetir? Eres un campeon.',
+      'A la primera! Eso es disciplina.',
+      'Cero repeticiones. Increible.',
+      'Sin snooze. Respeto total.',
+    ],
+    snoozed: [
+      'Costo un poco, pero lo lograste!',
+      'El snooze peleo duro. Tu ganaste.',
+      'Mejor tarde que nunca! A por todo.',
+      'Ya estas despierto. Eso es lo importante.',
+    ],
     streak: (days: number) => [
       `!${days} dias seguidos! !Sigue asi!`,
       `!Racha de ${days} dias! Imparable.`,
