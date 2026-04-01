@@ -70,5 +70,6 @@ export function formatSnoozeBanner(mins: number): string {
 // Countdown remaining
 export function formatCountdownLabel(seconds: number): string {
   if (seconds > 0) return t.snooze.alarmInLabel;
+  if (seconds <= 0) return t.snooze.alarmRinging;
   return t.snooze.alarmSoonLabel;
 }

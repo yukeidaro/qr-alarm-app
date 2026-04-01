@@ -34,6 +34,8 @@ export default function SnoozeScreen() {
   const breatheAnim = useRef(new Animated.Value(0.4)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const pulseScale = useRef(new Animated.Value(1)).current;
+  const urgentGlow = useRef(new Animated.Value(0)).current;
 
   // Block Android back button
   useFocusEffect(
@@ -61,6 +63,30 @@ export default function SnoozeScreen() {
     breathe.start();
     return () => breathe.stop();
   }, []);
+
+  // Urgent pulse when countdown reaches 0
+  useEffect(() => {
+    if (remainingSeconds !== null && remainingSeconds <= 0) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseScale, { toValue: 1.08, duration: 600, useNativeDriver: true }),
+          Animated.timing(pulseScale, { toValue: 1, duration: 600, useNativeDriver: true }),
+        ])
+      );
+      const glow = Animated.loop(
+        Animated.sequence([
+          Animated.timing(urgentGlow, { toValue: 1, duration: 800, useNativeDriver: true }),
+          Animated.timing(urgentGlow, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        ])
+      );
+      pulse.start();
+      glow.start();
+      return () => { pulse.stop(); glow.stop(); };
+    } else {
+      pulseScale.setValue(1);
+      urgentGlow.setValue(0);
+    }
+  }, [remainingSeconds !== null && remainingSeconds <= 0]);
 
   // Load initial data
   useEffect(() => {
@@ -115,7 +141,12 @@ export default function SnoozeScreen() {
 
       <Animated.View style={[styles.centerContent, { opacity: fadeIn }]}>
         {/* Breathing warm glow */}
-        <Animated.View style={[styles.warmGlow, { opacity: breatheAnim }]} />
+        <Animated.View style={[
+          styles.warmGlow,
+          remainingSeconds !== null && remainingSeconds <= 0
+            ? { opacity: urgentGlow, backgroundColor: 'rgba(232, 168, 56, 0.25)' }
+            : { opacity: breatheAnim },
+        ]} />
 
         {/* Snooze count */}
         {snoozeCount > 0 && (
@@ -136,12 +167,12 @@ export default function SnoozeScreen() {
               <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
             </View>
           </>
-        ) : (
-          <>
-            <Text style={styles.countdown}>0:00</Text>
-            <Text style={styles.labelUrgent}>{t.snooze.alarmSoonLabel}</Text>
-          </>
-        )}
+        ) : remainingSeconds !== null && remainingSeconds <= 0 ? (
+          <Animated.View style={{ alignItems: 'center', transform: [{ scale: pulseScale }] }}>
+            <Text style={styles.countdownUrgent}>0:00</Text>
+            <Text style={styles.labelUrgent}>{t.snooze.alarmRinging}</Text>
+          </Animated.View>
+        ) : null}
       </Animated.View>
 
       {/* Actions */}
@@ -213,6 +244,12 @@ const styles = StyleSheet.create({
     fontSize: 88,
     fontFamily: FONT_FAMILY.bold,
     color: TEXT_PRIMARY,
+    letterSpacing: 4,
+  },
+  countdownUrgent: {
+    fontSize: 88,
+    fontFamily: FONT_FAMILY.bold,
+    color: ACCENT_PRIMARY,
     letterSpacing: 4,
   },
   label: {
