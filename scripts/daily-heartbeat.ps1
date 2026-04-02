@@ -140,7 +140,7 @@ $taskChecks = @(
     @{
         Id          = "apple-dev-pay"
         Title       = "Apple Developer Program 支払い"
-        Check       = { $false } # Manual — check via heartbeat confirmation
+        Check       = { $true } # Completed 2026-04-02
         ManualOnly  = $true
     },
     @{
@@ -192,7 +192,7 @@ $taskChecks = @(
     @{
         Id          = "google-play-register"
         Title       = "Google Play Console registration"
-        Check       = { $false } # Manual verification needed
+        Check       = { $true } # Paid 2026-04-02, pending approval
         ManualOnly  = $true
     },
     @{

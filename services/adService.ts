@@ -51,22 +51,22 @@ const AD_UNIT_IDS = {
   bannerRinging: __DEV__
     ? TestIds.BANNER
     : Platform.select({
-        ios: 'ca-app-pub-REPLACE/ringing-banner-ios',
-        android: 'ca-app-pub-REPLACE/ringing-banner-android',
+        ios: 'ca-app-pub-8032919792244446/3218232495',
+        android: 'ca-app-pub-8032919792244446/2547419709',
       })!,
 
   bannerSnooze: __DEV__
     ? TestIds.BANNER
     : Platform.select({
-        ios: 'ca-app-pub-REPLACE/snooze-banner-ios',
-        android: 'ca-app-pub-REPLACE/snooze-banner-android',
+        ios: 'ca-app-pub-8032919792244446/5239994244',
+        android: 'ca-app-pub-8032919792244446/1436480607',
       })!,
 
   rewardedSnooze: __DEV__
     ? TestIds.REWARDED
     : Platform.select({
-        ios: 'ca-app-pub-REPLACE/rewarded-snooze-ios',
-        android: 'ca-app-pub-REPLACE/rewarded-snooze-android',
+        ios: 'ca-app-pub-8032919792244446/8186759199',
+        android: 'ca-app-pub-8032919792244446/9123398939',
       })!,
 };
 

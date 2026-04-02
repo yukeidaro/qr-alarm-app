@@ -29,6 +29,12 @@
       },
       "package": "com.yuasano.qralarm"
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/qr-alarm-app"
+    },
     "scheme": "qralarm",
     "plugins": [
       "expo-router",
@@ -48,8 +54,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+          "androidAppId": "ca-app-pub-8032919792244446~8021236108",
+          "iosAppId": "ca-app-pub-8032919792244446~4974167290"
         }
       ],
       [
