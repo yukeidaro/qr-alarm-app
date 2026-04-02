@@ -54,7 +54,14 @@ export function createAlarm(partial?: Partial<Alarm>): Alarm {
 
 export async function getAlarms(): Promise<Alarm[]> {
   const raw = await AsyncStorage.getItem(ALARMS_KEY);
-  return raw ? JSON.parse(raw) : [];
+  if (!raw) return [];
+  const alarms: Alarm[] = JSON.parse(raw);
+  // Normalize legacy alarms missing new fields
+  return alarms.map((a) => ({
+    ...a,
+    volume: a.volume ?? 1.0,
+    fadeIn: a.fadeIn ?? false,
+  }));
 }
 
 export async function saveAlarms(alarms: Alarm[]): Promise<void> {

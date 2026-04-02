@@ -42,6 +42,7 @@ export default function RingingScreen() {
   const { showAd: showRewardedAd, isLoaded: rewardedLoaded } = useRewardedAd();
 
   const [alarm, setAlarm] = useState<Alarm | null>(null);
+  const [alarmReady, setAlarmReady] = useState(!alarmId); // ready immediately if no alarmId
   const [hasQR, setHasQR] = useState(false);
   const [bgUri, setBgUri] = useState<string | null>(null);
   const [snoozeCount, setSnoozeCount] = useState(0);
@@ -83,6 +84,7 @@ export default function RingingScreen() {
         const alarms = await getAlarms();
         const found = alarms.find((a) => a.id === alarmId);
         if (found) setAlarm(found);
+        setAlarmReady(true);
       }
     };
     init();
@@ -92,12 +94,13 @@ export default function RingingScreen() {
   // Play alarm on focus (initial + returning from scan screen)
   useFocusEffect(
     useCallback(() => {
+      if (!alarmReady) return;
       const soundId = alarm?.soundId || 'gentle';
       const volume = alarm?.volume ?? 1.0;
       const fadeIn = alarm?.fadeIn ?? false;
       playAlarm(soundId, undefined, volume, fadeIn);
       return () => { /* stopAlarm handled by scan screen or unmount */ };
-    }, [alarm])
+    }, [alarm, alarmReady])
   );
 
   useEffect(() => {
