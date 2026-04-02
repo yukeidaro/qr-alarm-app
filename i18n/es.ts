@@ -71,6 +71,9 @@ export const es = {
     close: 'Cerrar',
     snooze: 'Repetir',
     snoozeOffHint: 'Solo desactivar',
+    volume: 'Volumen',
+    fadeIn: 'Volumen gradual',
+    fadeInHint: 'Aumentar durante 30s',
     oneTime: 'Una vez',
   },
 

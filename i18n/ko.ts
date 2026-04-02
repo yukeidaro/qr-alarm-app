@@ -71,6 +71,9 @@ export const ko = {
     close: '닫기',
     snooze: '스누즈',
     snoozeOffHint: '해제만 가능',
+    volume: '볼륨',
+    fadeIn: '점점 크게',
+    fadeInHint: '30초에 걸쳐 볼륨 증가',
     oneTime: '한 번만',
   },
 

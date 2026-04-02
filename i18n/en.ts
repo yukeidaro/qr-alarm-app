@@ -80,6 +80,9 @@ export const en = {
     close: 'Close',
     snooze: 'Snooze',
     snoozeOffHint: 'Dismiss only',
+    volume: 'Volume',
+    fadeIn: 'Gradual volume',
+    fadeInHint: 'Slowly increase over 30s',
     oneTime: 'One-time',
   },
 

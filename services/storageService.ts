@@ -11,6 +11,8 @@ export interface Alarm {
   soundId: string;
   snoozeEnabled: boolean;
   snoozeUsed: boolean;
+  volume: number; // 0.0–1.0
+  fadeIn: boolean; // gradually increase volume over 30s
 }
 
 const ALARMS_KEY = '@qralarm/alarms';
@@ -44,6 +46,8 @@ export function createAlarm(partial?: Partial<Alarm>): Alarm {
     soundId: 'gentle',
     snoozeEnabled: true,
     snoozeUsed: false,
+    volume: 1.0,
+    fadeIn: false,
     ...partial,
   };
 }

@@ -93,7 +93,9 @@ export default function RingingScreen() {
   useFocusEffect(
     useCallback(() => {
       const soundId = alarm?.soundId || 'gentle';
-      playAlarm(soundId);
+      const volume = alarm?.volume ?? 1.0;
+      const fadeIn = alarm?.fadeIn ?? false;
+      playAlarm(soundId, undefined, volume, fadeIn);
       return () => { /* stopAlarm handled by scan screen or unmount */ };
     }, [alarm])
   );

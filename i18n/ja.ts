@@ -77,6 +77,9 @@ export const ja = {
     close: '閉じる',
     snooze: 'スヌーズ',
     snoozeOffHint: '解除のみ',
+    volume: '音量',
+    fadeIn: '徐々に大きく',
+    fadeInHint: '30秒かけて音量を上げる',
     oneTime: '一回限り',
   },
 

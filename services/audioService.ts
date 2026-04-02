@@ -4,11 +4,15 @@ import { SOUND_CATALOG } from '../constants/sounds';
 
 let currentSound: Audio.Sound | null = null;
 let vibrationInterval: ReturnType<typeof setInterval> | null = null;
+let fadeInInterval: ReturnType<typeof setInterval> | null = null;
 
 // Preset sound map - derived from sound catalog
 const PRESET_SOUNDS: Record<string, any> = Object.fromEntries(
   SOUND_CATALOG.map((s) => [s.id, s.asset])
 );
+
+const FADE_IN_DURATION = 30000; // 30 seconds
+const FADE_IN_STEP = 500; // update every 500ms
 
 export async function configureAudio(): Promise<void> {
   await Audio.setAudioModeAsync({
@@ -18,7 +22,12 @@ export async function configureAudio(): Promise<void> {
   });
 }
 
-export async function playAlarm(soundId: string = 'gentle', customUri?: string): Promise<void> {
+export async function playAlarm(
+  soundId: string = 'gentle',
+  customUri?: string,
+  volume: number = 1.0,
+  fadeIn: boolean = false,
+): Promise<void> {
   await configureAudio();
   await stopAlarm();
 
@@ -26,18 +35,54 @@ export async function playAlarm(soundId: string = 'gentle', customUri?: string):
     ? { uri: customUri }
     : PRESET_SOUNDS[soundId] || PRESET_SOUNDS.gentle;
 
+  const targetVolume = Math.max(0, Math.min(1, volume));
+  const startVolume = fadeIn ? 0.05 : targetVolume;
+
   const { sound } = await Audio.Sound.createAsync(source, {
     isLooping: true,
-    volume: 1.0,
+    volume: startVolume,
     shouldPlay: true,
   });
 
   currentSound = sound;
   startVibration();
+
+  if (fadeIn && targetVolume > startVolume) {
+    startFadeIn(sound, startVolume, targetVolume);
+  }
+}
+
+function startFadeIn(sound: Audio.Sound, from: number, to: number): void {
+  stopFadeIn();
+  const steps = FADE_IN_DURATION / FADE_IN_STEP;
+  const increment = (to - from) / steps;
+  let currentVolume = from;
+  let stepCount = 0;
+
+  fadeInInterval = setInterval(async () => {
+    stepCount++;
+    currentVolume = Math.min(to, currentVolume + increment);
+    try {
+      await sound.setVolumeAsync(currentVolume);
+    } catch {
+      // Sound may have been unloaded
+    }
+    if (stepCount >= steps || currentVolume >= to) {
+      stopFadeIn();
+    }
+  }, FADE_IN_STEP);
+}
+
+function stopFadeIn(): void {
+  if (fadeInInterval) {
+    clearInterval(fadeInInterval);
+    fadeInInterval = null;
+  }
 }
 
 export async function stopAlarm(): Promise<void> {
   stopVibration();
+  stopFadeIn();
   if (currentSound) {
     try {
       await currentSound.stopAsync();
@@ -49,7 +94,7 @@ export async function stopAlarm(): Promise<void> {
   }
 }
 
-export async function previewSound(soundId: string, customUri?: string): Promise<Audio.Sound | null> {
+export async function previewSound(soundId: string, customUri?: string, volume?: number): Promise<Audio.Sound | null> {
   await configureAudio();
   const source = customUri
     ? { uri: customUri }
@@ -59,7 +104,7 @@ export async function previewSound(soundId: string, customUri?: string): Promise
 
   const { sound } = await Audio.Sound.createAsync(source, {
     shouldPlay: true,
-    volume: 0.5,
+    volume: volume ?? 0.5,
   });
   return sound;
 }

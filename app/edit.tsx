@@ -10,6 +10,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -286,6 +287,39 @@ export default function EditScreen() {
 
           <View style={styles.divider} />
 
+          {/* Volume */}
+          <View style={styles.section}>
+            <View style={styles.volumeHeader}>
+              <Text style={styles.settingLabel}>{t.edit.volume}</Text>
+              <Text style={styles.volumeValue}>{Math.round((alarm.volume ?? 1.0) * 100)}%</Text>
+            </View>
+            <Slider
+              style={styles.volumeSlider}
+              minimumValue={0.05}
+              maximumValue={1}
+              step={0.05}
+              value={alarm.volume ?? 1.0}
+              onValueChange={(val: number) => setAlarm((prev) => ({ ...prev, volume: val }))}
+              minimumTrackTintColor={ACCENT_PRIMARY}
+              maximumTrackTintColor={BG_TERTIARY}
+              thumbTintColor={ACCENT_PRIMARY}
+            />
+            <View style={styles.fadeInRow}>
+              <View>
+                <Text style={styles.settingLabel}>{t.edit.fadeIn}</Text>
+                <Text style={styles.settingHint}>{t.edit.fadeInHint}</Text>
+              </View>
+              <Switch
+                value={alarm.fadeIn ?? false}
+                onValueChange={(val) => setAlarm((prev) => ({ ...prev, fadeIn: val }))}
+                trackColor={{ false: BG_TERTIARY, true: ACCENT_PRIMARY }}
+                thumbColor={BG_SECONDARY}
+              />
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
           {/* QR status */}
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>{t.edit.qrBarcode}</Text>
@@ -387,6 +421,12 @@ const styles = StyleSheet.create({
   bgClearButton: { paddingBottom: SPACING.sm },
   bgClearText: { fontSize: FONT_SIZE.label, color: ERROR, fontFamily: FONT_FAMILY.regular },
   settingHint: { fontSize: FONT_SIZE.labelSmall, color: TEXT_MUTED, fontFamily: FONT_FAMILY.regular, marginTop: SPACING.xxs },
+
+  // ─── Volume ───
+  volumeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  volumeValue: { fontSize: FONT_SIZE.bodySmall, color: ACCENT_SUBTLE, fontFamily: FONT_FAMILY.semiBold },
+  volumeSlider: { width: '100%', height: 40, marginTop: SPACING.xs },
+  fadeInRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.sm },
 
   // ─── Actions ───
   actionsSection: { marginTop: SPACING.xl },
