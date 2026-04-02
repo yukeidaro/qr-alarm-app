@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
+import { Paths, Directory, File as FSFile } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { previewSound } from '../services/audioService';
 import { getCustomSounds, saveCustomSound, deleteCustomSound, CustomSound } from '../services/storageService';
@@ -126,19 +126,19 @@ export default function SoundsScreen() {
       if (result.canceled || !result.assets?.[0]) return;
 
       const file = result.assets[0];
-      const destDir = `${FileSystem.documentDirectory}custom_sounds/`;
-      const dirInfo = await FileSystem.getInfoAsync(destDir);
-      if (!dirInfo.exists) {
-        await FileSystem.makeDirectoryAsync(destDir, { intermediates: true });
+      const destDir = new Directory(Paths.document, 'custom_sounds/');
+      if (!destDir.exists) {
+        destDir.create();
       }
 
-      const destUri = `${destDir}${Date.now()}_${file.name}`;
-      await FileSystem.copyAsync({ from: file.uri, to: destUri });
+      const destFile = new FSFile(destDir, `${Date.now()}_${file.name}`);
+      const srcFile = new FSFile(file.uri);
+      srcFile.copy(destFile);
 
       const newSound: CustomSound = {
         id: `custom_${Date.now()}`,
         name: file.name.replace(/\.[^.]+$/, ''),
-        uri: destUri,
+        uri: destFile.uri,
       };
       await saveCustomSound(newSound);
       setCustomSounds((prev) => [...prev, newSound]);
@@ -158,7 +158,7 @@ export default function SoundsScreen() {
           style: 'destructive',
           onPress: async () => {
             await deleteCustomSound(sound.id);
-            try { await FileSystem.deleteAsync(sound.uri, { idempotent: true }); } catch {}
+            try { const f = new FSFile(sound.uri); if (f.exists) f.delete(); } catch {}
             setCustomSounds((prev) => prev.filter((s) => s.id !== sound.id));
             if (selectedSoundId === sound.id) setSelectedSoundId('gentle');
           },
