@@ -20,20 +20,30 @@
       "bundleIdentifier": "com.yuasano.qralarm",
       "infoPlist": {
         "CFBundleDevelopmentRegion": "ja",
-        "CFBundleLocalizations": ["ja", "en", "ko", "es"]
+        "CFBundleLocalizations": [
+          "ja",
+          "en",
+          "ko",
+          "es"
+        ]
       }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F5F0EB"
       },
-      "package": "com.yuasano.qralarm"
+      "package": "com.yuasano.qralarm",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "com.google.android.gms.permission.AD_ID"
+      ]
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/qr-alarm-app"
+      "url": "https://u.expo.dev/69f046ad-ed1b-43f0-9f07-ee113e81965e"
     },
     "scheme": "qralarm",
     "plugins": [
@@ -73,6 +83,13 @@
         }
       ],
       "expo-localization"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "69f046ad-ed1b-43f0-9f07-ee113e81965e"
+      }
+    },
+    "owner": "ukdayoharry"
   }
 }

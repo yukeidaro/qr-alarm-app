@@ -1,0 +1,6 @@
+my-app/
+scripts/
+output/
+assets/screenshots/reference/
+.git/
+*.log
