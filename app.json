@@ -9,15 +9,15 @@
     "splash": {
       "backgroundColor": "#F5F0EB"
     },
-    "locales": {
-      "ja": "./locales/ja.json",
-      "en": "./locales/en.json",
-      "ko": "./locales/ko.json",
-      "es": "./locales/es.json"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.yuasano.qralarm",
+      "locales": {
+        "ja": "./locales/ja.json",
+        "en": "./locales/en.json",
+        "ko": "./locales/ko.json",
+        "es": "./locales/es.json"
+      },
       "infoPlist": {
         "CFBundleDevelopmentRegion": "ja",
         "CFBundleLocalizations": [
@@ -79,6 +79,12 @@
         {
           "ios": {
             "useFrameworks": "static"
+          },
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "kotlinVersion": "1.9.25"
           }
         }
       ],

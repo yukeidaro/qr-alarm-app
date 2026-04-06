@@ -14,7 +14,10 @@
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "GRADLE_OPTS": "-Xmx4g -XX:MaxMetaspaceSize=512m"
+      }
     }
   },
   "submit": {
