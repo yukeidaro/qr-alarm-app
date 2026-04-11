@@ -199,7 +199,6 @@ export const ja = {
   // Sound Browser
   soundBrowser: {
     title: 'サウンド',
-    all: '全て',
     done: '完了',
     addCustom: 'サウンドを追加',
     customSection: 'マイサウンド',

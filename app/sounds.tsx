@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,8 +18,6 @@ import { getCustomSounds, saveCustomSound, deleteCustomSound, CustomSound } from
 import { setPendingSound } from '../services/soundSelectionStore';
 import {
   SOUND_CATEGORIES,
-  SOUND_CATALOG,
-  getAllSoundsGrouped,
   getSoundsByCategory,
   SoundCategory,
   SoundDefinition,
@@ -36,10 +34,6 @@ type SectionData = {
   data: (SoundDefinition | CustomSound)[];
 };
 
-const VIEWABILITY_CONFIG = {
-  viewAreaCoveragePercentThreshold: 50,
-};
-
 export default function SoundsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -47,10 +41,9 @@ export default function SoundsScreen() {
   const { currentSoundId } = useLocalSearchParams<{ currentSoundId?: string }>();
 
   const [selectedSoundId, setSelectedSoundId] = useState(currentSoundId || 'gentle');
-  const [activeCategory, setActiveCategory] = useState<SoundCategory | null>(null);
+  const [activeCategory, setActiveCategory] = useState<SoundCategory>(SOUND_CATEGORIES[0].key);
   const [playingSoundId, setPlayingSoundId] = useState<string | null>(null);
   const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
-  const [visibleCategory, setVisibleCategory] = useState<SoundCategory | null>(null);
   const previewRef = useRef<any>(null);
   const chipScrollRef = useRef<ScrollView>(null);
   const chipPositions = useRef<Record<string, number>>({});
@@ -127,32 +120,18 @@ export default function SoundsScreen() {
     router.back();
   };
 
-  const scrollToChip = (key: string | null) => {
-    const chipKey = key ?? 'all';
-    const x = chipPositions.current[chipKey];
+  const scrollToChip = (key: SoundCategory) => {
+    const x = chipPositions.current[key];
     if (x !== undefined) {
       chipScrollRef.current?.scrollTo({ x: Math.max(0, x - SPACING.lg), animated: true });
     }
   };
 
-  const handleChipPress = (category: SoundCategory | null) => {
+  const handleChipPress = (category: SoundCategory) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveCategory(category);
-    setVisibleCategory(null);
     scrollToChip(category);
   };
-
-  const handleViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: Array<{ section?: SectionData }> }) => {
-      if (activeCategory) return;
-      const firstVisible = viewableItems.find(item => item.section);
-      if (firstVisible?.section) {
-        setVisibleCategory(firstVisible.section.category);
-        scrollToChip(firstVisible.section.category);
-      }
-    },
-    [activeCategory]
-  );
 
   const handleAddCustom = async () => {
     try {
@@ -215,27 +194,15 @@ export default function SoundsScreen() {
 
   // Build sections
   const buildSections = (): SectionData[] => {
-    if (activeCategory) {
-      const presets = getSoundsByCategory(activeCategory);
-      const sections: SectionData[] = [{
-        category: activeCategory,
-        data: presets,
-      }];
-      return sections;
-    }
+    const presets = getSoundsByCategory(activeCategory);
+    const sections: SectionData[] = [{
+      category: activeCategory,
+      data: presets,
+    }];
 
-    const grouped = getAllSoundsGrouped();
-    const sections: SectionData[] = grouped.map(({ category, data }) => ({
-      category,
-      data: data as (SoundDefinition | CustomSound)[],
-    }));
-
-    // Add custom sounds section
-    if (customSounds.length > 0) {
-      sections.push({
-        category: 'custom' as any,
-        data: customSounds,
-      });
+    // Add custom sounds section when viewing custom category (if we add one)
+    if (activeCategory === ('custom' as any) && customSounds.length > 0) {
+      sections[0].data = customSounds;
     }
 
     return sections;
@@ -310,25 +277,15 @@ export default function SoundsScreen() {
           contentContainerStyle={styles.chipRow}
           style={styles.chipScroll}
         >
-          <TouchableOpacity
-            style={[styles.chip, !activeCategory && !visibleCategory && styles.chipActive]}
-            onPress={() => { handleChipPress(null); }}
-            activeOpacity={ACTIVE_OPACITY.default}
-            onLayout={(e) => { chipPositions.current['all'] = e.nativeEvent.layout.x; }}
-          >
-            <Text style={[styles.chipText, !activeCategory && !visibleCategory && styles.chipTextActive]}>
-              {t.soundBrowser.all}
-            </Text>
-          </TouchableOpacity>
           {SOUND_CATEGORIES.map(({ key, labelKey }) => (
             <TouchableOpacity
               key={key}
-              style={[styles.chip, (activeCategory === key || (!activeCategory && visibleCategory === key)) && styles.chipActive]}
-              onPress={() => handleChipPress(activeCategory === key ? null : key)}
+              style={[styles.chip, activeCategory === key && styles.chipActive]}
+              onPress={() => handleChipPress(key)}
               activeOpacity={ACTIVE_OPACITY.default}
               onLayout={(e) => { chipPositions.current[key] = e.nativeEvent.layout.x; }}
             >
-              <Text style={[styles.chipText, (activeCategory === key || (!activeCategory && visibleCategory === key)) && styles.chipTextActive]}>
+              <Text style={[styles.chipText, activeCategory === key && styles.chipTextActive]}>
                 {getCategoryLabel(key)}
               </Text>
             </TouchableOpacity>
@@ -344,8 +301,6 @@ export default function SoundsScreen() {
           contentContainerStyle={styles.listContent}
           stickySectionHeadersEnabled={false}
           showsVerticalScrollIndicator={false}
-          onViewableItemsChanged={handleViewableItemsChanged}
-          viewabilityConfig={VIEWABILITY_CONFIG}
         />
 
         {/* Done Button */}

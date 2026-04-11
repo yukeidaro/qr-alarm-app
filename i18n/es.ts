@@ -187,7 +187,6 @@ export const es = {
   // Sound Browser
   soundBrowser: {
     title: 'Sonido',
-    all: 'Todos',
     done: 'Hecho',
     addCustom: 'Agregar sonido',
     customSection: 'Mis sonidos',

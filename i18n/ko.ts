@@ -187,7 +187,6 @@ export const ko = {
   // Sound Browser
   soundBrowser: {
     title: '사운드',
-    all: '전체',
     done: '완료',
     addCustom: '사운드 추가',
     customSection: '내 사운드',

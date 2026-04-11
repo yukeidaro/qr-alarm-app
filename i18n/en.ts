@@ -202,7 +202,6 @@ export const en = {
   // Sound Browser
   soundBrowser: {
     title: 'Sound',
-    all: 'All',
     done: 'Done',
     addCustom: 'Add Sound',
     customSection: 'My Sounds',
