@@ -368,7 +368,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   headerTitle: { fontSize: FONT_SIZE.body, color: c.textPrimary, fontFamily: FONT_FAMILY.semiBold },
 
   // Chips
-  chipScroll: { maxHeight: 56, marginBottom: SPACING.lg },
+  chipScroll: { marginBottom: SPACING.lg },
   chipRow: {
     paddingHorizontal: SCREEN_PADDING.horizontal,
     gap: SPACING.sm,
@@ -390,7 +390,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: FONT_SIZE.bodySmall,
     fontFamily: FONT_FAMILY.medium,
     color: c.textMuted,
-    lineHeight: Math.round(FONT_SIZE.bodySmall * 1.2),
     includeFontPadding: false,
   },
   chipTextActive: {
