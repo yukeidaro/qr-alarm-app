@@ -117,6 +117,7 @@ export const es = {
     nameDesc: 'Ponle un nombre para saber que codigo escanear para cada alarma.',
     namePlaceholder: 'ej. Libro, Taza...',
     save: 'Guardar',
+    streakLabel: (days: number) => `${days} dias seguidos!`,
   },
 
   snooze: {
@@ -319,5 +320,10 @@ export const es = {
     cancel: 'Cancelar',
     delete: 'Eliminar',
     deleted: 'Eliminado',
+  },
+
+  adCompletion: {
+    close: 'Cerrar',
+    adLabel: 'Publicidad',
   },
 } as const;

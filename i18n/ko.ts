@@ -117,6 +117,7 @@ export const ko = {
     nameDesc: '어떤 알람에 어떤 코드를 사용할지 알 수 있도록 이름을 지어주세요.',
     namePlaceholder: '예: 침실 책, 머그컵...',
     save: '저장',
+    streakLabel: (days: number) => `${days}일 연속 달성!`,
   },
 
   snooze: {
@@ -319,5 +320,10 @@ export const ko = {
     cancel: '취소',
     delete: '삭제',
     deleted: '삭제되었습니다',
+  },
+
+  adCompletion: {
+    close: '닫기',
+    adLabel: '광고',
   },
 } as const;

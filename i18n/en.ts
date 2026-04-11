@@ -129,6 +129,7 @@ export const en = {
     nameDesc: 'Give it a name so you know which code to scan for each alarm.',
     namePlaceholder: 'e.g. Bedroom book, Mug...',
     save: 'Save',
+    streakLabel: (days: number) => `${days} days in a row!`,
   },
 
   // Snooze
@@ -335,5 +336,11 @@ export const en = {
     cancel: 'Cancel',
     delete: 'Delete',
     deleted: 'Deleted',
+  },
+
+  // Ad completion screen
+  adCompletion: {
+    close: 'Close',
+    adLabel: 'Advertisement',
   },
 } as const;

@@ -126,6 +126,7 @@ export const ja = {
     nameDesc: 'どのアラームにどのコードを使うかわかるように名前をつけましょう。',
     namePlaceholder: '例: 寝室の本、マグカップ...',
     save: '保存',
+    streakLabel: (days: number) => `${days}日連続達成！`,
   },
 
   // Snooze
@@ -332,5 +333,10 @@ export const ja = {
     cancel: 'キャンセル',
     delete: '削除',
     deleted: '削除しました',
+  },
+
+  adCompletion: {
+    close: '閉じる',
+    adLabel: '広告',
   },
 } as const;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
   TextInput, KeyboardAvoidingView, Platform,
@@ -6,6 +6,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import {
   saveRegisteredQRItem,
   getRegisteredQR,
@@ -19,11 +20,8 @@ import {
 } from '../services/storageService';
 import { stopAlarm } from '../services/audioService';
 import Button from '../components/Button';
-import {
-  BG_PRIMARY, BG_SECONDARY, ACCENT_PRIMARY, ACCENT_PRIMARY_TEXT,
-  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ERROR,
-  OVERLAY, BG_TERTIARY,
-} from '../constants/colors';
+import { ThemeColors } from '../constants/colors';
+import { useTheme } from '../theme';
 import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
 import { SPACING, SCREEN_PADDING, RADIUS, SIZE, ACTIVE_OPACITY, TIMER } from '../constants/spacing';
 import { t } from '../i18n';
@@ -40,6 +38,8 @@ export default function ScanScreen() {
   const mode: ScanMode = (params.mode as ScanMode) || 'register';
   const alarmId = params.alarmId;
   const qrId = params.qrId; // specific QR to match against
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -50,6 +50,7 @@ export default function ScanScreen() {
   const [dismissed, setDismissed] = useState(false);
   const [torch, setTorch] = useState(false);
   const [celebrationMsg, setCelebrationMsg] = useState<string | null>(null);
+  const [dismissStreak, setDismissStreak] = useState(0);
 
   // Name input state (register mode)
   const [pendingData, setPendingData] = useState<string | null>(null);
@@ -61,18 +62,64 @@ export default function ScanScreen() {
   const lastScannedTimeRef = useRef<number>(0);
 
   const cornerPulse = useRef(new Animated.Value(0.6)).current;
+  const scanScale = useRef(new Animated.Value(1)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
+
+  // Completion animation values
+  const checkScale = useRef(new Animated.Value(0)).current;
+  const checkOpacity = useRef(new Animated.Value(0)).current;
+  const msgOpacity = useRef(new Animated.Value(0)).current;
+
+  const playCompletionAnimation = () => {
+    // Phase 1: Checkmark appears
+    Animated.parallel([
+      Animated.spring(checkScale, {
+        toValue: 1,
+        friction: 4,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(checkOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    // Phase 2: Message fade in (500ms later)
+    setTimeout(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Animated.timing(msgOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
+    }, 500);
+
+    // Phase 3: Navigate to ad completion screen (3s later)
+    setTimeout(() => {
+      router.replace('/ad-completion');
+    }, 3000);
+  };
 
   useEffect(() => {
     Animated.timing(fadeIn, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(cornerPulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(cornerPulse, { toValue: 0.6, duration: 1500, useNativeDriver: true }),
+    const breathe = Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(cornerPulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
+          Animated.timing(cornerPulse, { toValue: 0.6, duration: 1500, useNativeDriver: true }),
+        ]),
+        Animated.sequence([
+          Animated.timing(scanScale, { toValue: 1.06, duration: 1500, useNativeDriver: true }),
+          Animated.timing(scanScale, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        ]),
       ])
     );
-    pulse.start();
-    return () => pulse.stop();
+    breathe.start();
+    return () => breathe.stop();
   }, []);
 
   useEffect(() => {
@@ -105,6 +152,10 @@ export default function ScanScreen() {
     if (mode === 'register') {
       // Show name input
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Animated.sequence([
+        Animated.timing(scanScale, { toValue: 1.12, duration: 150, useNativeDriver: true }),
+        Animated.timing(scanScale, { toValue: 1, duration: 300, useNativeDriver: true }),
+      ]).start();
       setPendingData(data);
       setStatusText(t.scan.scannedNamePrompt);
     } else {
@@ -121,6 +172,11 @@ export default function ScanScreen() {
       if (matched) {
         setScanned(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Bounce effect on scan frame
+        Animated.sequence([
+          Animated.timing(scanScale, { toValue: 1.12, duration: 150, useNativeDriver: true }),
+          Animated.timing(scanScale, { toValue: 1, duration: 300, useNativeDriver: true }),
+        ]).start();
         dismissedRef.current = true;
         setDismissed(true);
         if (timerRef.current) clearInterval(timerRef.current);
@@ -149,8 +205,9 @@ export default function ScanScreen() {
           msg = msgs.general[Math.floor(Math.random() * msgs.general.length)];
         }
         setCelebrationMsg(msg);
+        setDismissStreak(streak);
         setStatusText(t.scan.dismissed);
-        setTimeout(() => router.dismissAll(), 2500);
+        playCompletionAnimation();
       } else {
         setStatusText(t.scan.mismatch);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -207,13 +264,13 @@ export default function ScanScreen() {
         onBarcodeScanned={(scanned || pendingData) ? undefined : handleBarCodeScanned}
       >
         <View style={styles.overlay}>
-          <View style={styles.scanFrame}>
+          <Animated.View style={[styles.scanFrame, { transform: [{ scale: scanScale }] }]}>
             <Animated.View style={[styles.corner, styles.cornerTL, { opacity: cornerPulse }]} />
             <Animated.View style={[styles.corner, styles.cornerTR, { opacity: cornerPulse }]} />
             <Animated.View style={[styles.corner, styles.cornerBL, { opacity: cornerPulse }]} />
             <Animated.View style={[styles.corner, styles.cornerBR, { opacity: cornerPulse }]} />
             <View style={styles.centerDot} />
-          </View>
+          </Animated.View>
 
           <Text style={styles.modeLabel}>
             {mode === 'register' ? 'REGISTER' : 'SCAN'}
@@ -235,7 +292,7 @@ export default function ScanScreen() {
               value={qrName}
               onChangeText={setQrName}
               placeholder={t.scan.namePlaceholder}
-              placeholderTextColor={TEXT_MUTED}
+              placeholderTextColor={colors.textMuted}
               autoFocus
               returnKeyType="done"
               onSubmitEditing={handleSaveName}
@@ -247,35 +304,54 @@ export default function ScanScreen() {
         </KeyboardAvoidingView>
       )}
 
-      {/* Status bar */}
-      <View style={styles.statusBar}>
-        <View style={[styles.statusPill, dismissed && styles.statusPillSuccess]}>
-          <View style={[styles.statusDot, dismissed && styles.statusDotSuccess]} />
-          <Text style={[styles.statusText, dismissed && styles.statusTextSuccess]}>{statusText}</Text>
-        </View>
+      {/* Status bar — only shown in dismiss mode */}
+      {mode === 'dismiss' && (
+        <View style={styles.statusBar}>
+          <View style={[styles.statusPill, dismissed && styles.statusPillSuccess]}>
+            <View style={[styles.statusDot, dismissed && styles.statusDotSuccess]} />
+            <Text style={[styles.statusText, dismissed && styles.statusTextSuccess]}>{statusText}</Text>
+          </View>
 
-        {mode === 'dismiss' && countdown > 0 && !dismissed && (
-          <View style={styles.countdownSection}>
-            <View style={styles.progressTrack}>
-              <View style={[
-                styles.progressFill,
-                { width: `${progress * 100}%` },
-                progress > 0.7 && styles.progressFillUrgent,
-              ]} />
+          {countdown > 0 && !dismissed && (
+            <View style={styles.countdownSection}>
+              <View style={styles.progressTrack}>
+                <View style={[
+                  styles.progressFill,
+                  { width: `${progress * 100}%` },
+                  progress > 0.7 && styles.progressFillUrgent,
+                ]} />
+              </View>
+              <Text style={[styles.countdownText, progress > 0.7 && styles.countdownTextUrgent]}>
+                {t.scan.countdown(countdown)}
+              </Text>
             </View>
-            <Text style={[styles.countdownText, progress > 0.7 && styles.countdownTextUrgent]}>
-              {t.scan.countdown(countdown)}
-            </Text>
-          </View>
-        )}
-      </View>
+          )}
+        </View>
+      )}
 
-      {/* Celebration message on dismiss */}
-      {celebrationMsg && (
-        <View style={styles.celebrationOverlay}>
-          <View style={styles.celebrationCard}>
-            <Text style={styles.celebrationText}>{celebrationMsg}</Text>
-          </View>
+      {/* Completion overlay on dismiss */}
+      {dismissed && celebrationMsg && (
+        <View style={styles.completionOverlay}>
+          <Animated.View style={[styles.checkCircle, {
+            transform: [{ scale: checkScale }],
+            opacity: checkOpacity,
+          }]}>
+            <Ionicons name="checkmark" size={64} color="#FFFFFF" />
+          </Animated.View>
+
+          <Animated.Text style={[styles.completionMsg, { opacity: msgOpacity }]}>
+            {celebrationMsg}
+          </Animated.Text>
+
+          {dismissStreak >= 2 && (
+            <Animated.Text style={[styles.streakText, { opacity: msgOpacity }]}>
+              {t.scan.streakLabel(dismissStreak)}
+            </Animated.Text>
+          )}
+
+          <Animated.Text style={[styles.completionTime, { opacity: msgOpacity }]}>
+            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Animated.Text>
         </View>
       )}
 
@@ -287,16 +363,27 @@ export default function ScanScreen() {
       >
         <Text style={styles.torchIcon}>{'\u{1F526}'}</Text>
       </TouchableOpacity>
+
+      {/* Back button (top right, register mode only) */}
+      {mode === 'register' && (
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          activeOpacity={ACTIVE_OPACITY.default}
+        >
+          <Text style={styles.backButtonText}>{'\u2715'}</Text>
+        </TouchableOpacity>
+      )}
     </Animated.View>
   );
 }
 
 const SCAN_FRAME_SIZE = 320;
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG_PRIMARY,
+    backgroundColor: c.bgPrimary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -305,7 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: OVERLAY.black40,
+    backgroundColor: c.overlay.black40,
   },
   scanFrame: {
     width: SCAN_FRAME_SIZE,
@@ -318,7 +405,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 36,
     height: 36,
-    borderColor: ACCENT_PRIMARY,
+    borderColor: c.accent,
   },
   cornerTL: { top: -1, left: -1, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: RADIUS.xl },
   cornerTR: { top: -1, right: -1, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: RADIUS.xl },
@@ -328,12 +415,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
     opacity: 0.3,
   },
   modeLabel: {
     fontSize: FONT_SIZE.micro,
-    color: ACCENT_PRIMARY,
+    color: c.accent,
     fontFamily: FONT_FAMILY.semiBold,
     letterSpacing: 3,
     marginTop: SPACING.xxl,
@@ -355,44 +442,60 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xxl,
     paddingVertical: SPACING.base,
     borderRadius: RADIUS.full,
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     gap: SPACING.sm,
   },
-  statusPillSuccess: { backgroundColor: OVERLAY.accent10 },
-  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: TEXT_MUTED },
-  statusDotSuccess: { backgroundColor: ACCENT_PRIMARY },
-  statusText: { fontSize: FONT_SIZE.bodySmall, color: TEXT_PRIMARY, fontFamily: FONT_FAMILY.regular },
-  statusTextSuccess: { color: ACCENT_PRIMARY },
+  statusPillSuccess: { backgroundColor: c.overlay.accent10 },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.textMuted },
+  statusDotSuccess: { backgroundColor: c.accent },
+  statusText: { fontSize: FONT_SIZE.bodySmall, color: c.textPrimary, fontFamily: FONT_FAMILY.regular },
+  statusTextSuccess: { color: c.accent },
 
   // Countdown
   countdownSection: { width: '100%', alignItems: 'center', gap: SPACING.sm },
   progressTrack: { width: '100%', height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
-  progressFill: { height: 3, borderRadius: 2, backgroundColor: ACCENT_PRIMARY },
-  progressFillUrgent: { backgroundColor: ERROR },
-  countdownText: { fontSize: FONT_SIZE.caption, color: TEXT_MUTED, fontFamily: FONT_FAMILY.medium },
-  countdownTextUrgent: { color: ERROR },
+  progressFill: { height: 3, borderRadius: 2, backgroundColor: c.accent },
+  progressFillUrgent: { backgroundColor: c.error },
+  countdownText: { fontSize: FONT_SIZE.caption, color: c.textMuted, fontFamily: FONT_FAMILY.medium },
+  countdownTextUrgent: { color: c.error },
 
-  // Celebration
-  celebrationOverlay: {
+  // Completion overlay
+  completionOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: OVERLAY.black70,
+    backgroundColor: 'rgba(34, 120, 69, 0.92)',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: SCREEN_PADDING.horizontal,
+    zIndex: 100,
   },
-  celebrationCard: {
-    backgroundColor: BG_SECONDARY,
-    borderRadius: RADIUS.xl,
-    paddingHorizontal: SPACING['4xl'],
-    paddingVertical: SPACING['5xl'],
+  checkCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
-  celebrationText: {
-    fontSize: FONT_SIZE.heading3,
-    fontFamily: FONT_FAMILY.semiBold,
-    color: TEXT_PRIMARY,
+  completionMsg: {
+    fontSize: FONT_SIZE.heading2,
+    fontFamily: FONT_FAMILY.bold,
+    color: '#FFFFFF',
+    marginTop: SPACING.xxl,
     textAlign: 'center',
-    lineHeight: 28,
+    paddingHorizontal: SPACING.xxl,
+  },
+  streakText: {
+    fontSize: FONT_SIZE.body,
+    fontFamily: FONT_FAMILY.medium,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: SPACING.base,
+  },
+  completionTime: {
+    fontSize: FONT_SIZE.bodySmall,
+    fontFamily: FONT_FAMILY.regular,
+    color: 'rgba(255, 255, 255, 0.6)',
+    marginTop: SPACING.xl,
   },
 
   // Torch
@@ -408,7 +511,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   torchButtonActive: {
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
   },
   torchIcon: {
     fontSize: 20,
@@ -417,45 +520,63 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
 
+  // Back button
+  backButton: {
+    position: 'absolute',
+    top: SCREEN_PADDING.top,
+    right: SCREEN_PADDING.horizontal,
+    width: SIZE.closeButton,
+    height: SIZE.closeButton,
+    borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    fontSize: 18,
+    color: c.textContrast,
+    fontFamily: FONT_FAMILY.medium,
+  },
+
   // Name input overlay
   nameOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: OVERLAY.black70,
+    backgroundColor: c.overlay.black70,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: SCREEN_PADDING.horizontal,
   },
   nameCard: {
     width: '100%',
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     borderRadius: RADIUS.base,
     padding: SPACING.xxl,
   },
   nameTitle: {
     fontSize: FONT_SIZE.heading3,
     fontFamily: FONT_FAMILY.semiBold,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     marginBottom: SPACING.xs,
   },
   nameDesc: {
     fontSize: FONT_SIZE.caption,
     fontFamily: FONT_FAMILY.regular,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     marginBottom: SPACING.xl,
     lineHeight: 20,
   },
   nameInput: {
     fontSize: FONT_SIZE.body,
     fontFamily: FONT_FAMILY.medium,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     paddingVertical: SPACING.base,
     paddingHorizontal: SPACING.lg,
-    backgroundColor: BG_PRIMARY,
+    backgroundColor: c.bgPrimary,
     borderRadius: RADIUS.sm,
     marginBottom: SPACING.lg,
   },
   saveButton: {
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
     paddingVertical: SPACING.lg,
     borderRadius: RADIUS.full,
     alignItems: 'center',
@@ -463,12 +584,12 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: FONT_SIZE.body,
     fontFamily: FONT_FAMILY.semiBold,
-    color: ACCENT_PRIMARY_TEXT,
+    color: c.accentText,
   },
 
   message: {
     fontSize: FONT_SIZE.body,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     textAlign: 'center',
     marginBottom: SPACING.xl,
     fontFamily: FONT_FAMILY.regular,
