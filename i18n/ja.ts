@@ -17,7 +17,7 @@ export const ja = {
     qrRegistered: '✓ QR',
     qrRegister: 'QR登録',
     alarms: 'アラーム',
-    addAlarm: '+ 追加',
+
     emptyTitle: '最初のアラームを作成',
     emptyHint: 'タップして始めましょう',
   },

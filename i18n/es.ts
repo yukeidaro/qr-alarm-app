@@ -14,7 +14,7 @@ export const es = {
     qrRegistered: '✓ QR',
     qrRegister: 'QR Config.',
     alarms: 'Alarmas',
-    addAlarm: '+ Añadir',
+
     emptyTitle: 'Crea tu primera alarma',
     emptyHint: 'Toca para empezar',
   },

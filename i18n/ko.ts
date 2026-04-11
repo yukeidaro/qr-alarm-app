@@ -14,7 +14,7 @@ export const ko = {
     qrRegistered: '✓ QR',
     qrRegister: 'QR 등록',
     alarms: '알람',
-    addAlarm: '+ 추가',
+
     emptyTitle: '첫 번째 알람을 만들어 보세요',
     emptyHint: '탭하여 시작하기',
   },

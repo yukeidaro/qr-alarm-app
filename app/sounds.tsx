@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,11 +24,9 @@ import {
   SoundCategory,
   SoundDefinition,
 } from '../constants/sounds';
-import {
-  BG_PRIMARY, BG_SECONDARY, BG_TERTIARY,
-  ACCENT_PRIMARY, ACCENT_PRIMARY_TEXT, TEXT_PRIMARY,
-  TEXT_SECONDARY, TEXT_MUTED, OVERLAY, TEXT_CONTRAST,
-} from '../constants/colors';
+import { useTheme } from '../theme';
+import { GlassCard } from '../components/GlassCard';
+import { ThemeColors } from '../constants/colors';
 import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
 import { SPACING, SCREEN_PADDING, RADIUS, SIZE, ACTIVE_OPACITY, ANIMATION } from '../constants/spacing';
 import { t } from '../i18n';
@@ -38,14 +36,21 @@ type SectionData = {
   data: (SoundDefinition | CustomSound)[];
 };
 
+const VIEWABILITY_CONFIG = {
+  viewAreaCoveragePercentThreshold: 50,
+};
+
 export default function SoundsScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { currentSoundId } = useLocalSearchParams<{ currentSoundId?: string }>();
 
   const [selectedSoundId, setSelectedSoundId] = useState(currentSoundId || 'gentle');
   const [activeCategory, setActiveCategory] = useState<SoundCategory | null>(null);
   const [playingSoundId, setPlayingSoundId] = useState<string | null>(null);
   const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
+  const [visibleCategory, setVisibleCategory] = useState<SoundCategory | null>(null);
   const previewRef = useRef<any>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -91,13 +96,21 @@ export default function SoundsScreen() {
     const sound = await previewSound(soundId, customUri);
     if (sound) {
       previewRef.current = sound;
-      setTimeout(async () => {
-        try { await sound.stopAsync(); await sound.unloadAsync(); } catch {}
-        if (previewRef.current === sound) {
-          previewRef.current = null;
-          setPlayingSoundId((prev) => (prev === soundId ? null : prev));
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if (!status.isLoaded) return;
+        if (status.didJustFinish) {
+          if (status.isLooping) {
+            // Fallback: replay if native looping failed
+            sound.replayAsync().catch(() => {});
+          } else {
+            try { await sound.stopAsync(); await sound.unloadAsync(); } catch {}
+            if (previewRef.current === sound) {
+              previewRef.current = null;
+              setPlayingSoundId((prev) => (prev === soundId ? null : prev));
+            }
+          }
         }
-      }, 2000);
+      });
     }
   };
 
@@ -115,7 +128,19 @@ export default function SoundsScreen() {
   const handleChipPress = (category: SoundCategory | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveCategory(category);
+    setVisibleCategory(null);
   };
+
+  const handleViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: Array<{ section?: SectionData }> }) => {
+      if (activeCategory) return;
+      const firstVisible = viewableItems.find(item => item.section);
+      if (firstVisible?.section) {
+        setVisibleCategory(firstVisible.section.category);
+      }
+    },
+    [activeCategory]
+  );
 
   const handleAddCustom = async () => {
     try {
@@ -223,27 +248,33 @@ export default function SoundsScreen() {
     const isPlaying = playingSoundId === item.id;
 
     return (
-      <TouchableOpacity
-        style={[styles.soundRow, isSelected && styles.soundRowActive]}
-        onPress={() => handlePreview(item.id, isCustom ? (item as CustomSound).uri : undefined)}
-        onLongPress={isCustom ? () => handleDeleteCustom(item as CustomSound) : undefined}
-        activeOpacity={ACTIVE_OPACITY.default}
+      <GlassCard
+        active={isSelected}
+        style={styles.soundRow}
+        borderRadius={RADIUS.base}
       >
-        {/* Radio button */}
-        <View style={[styles.radio, isSelected && styles.radioActive]}>
-          {isSelected && <View style={styles.radioDot} />}
-        </View>
+        <TouchableOpacity
+          style={styles.soundRowInner}
+          onPress={() => handlePreview(item.id, isCustom ? (item as CustomSound).uri : undefined)}
+          onLongPress={isCustom ? () => handleDeleteCustom(item as CustomSound) : undefined}
+          activeOpacity={ACTIVE_OPACITY.default}
+        >
+          {/* Radio button */}
+          <View style={[styles.radio, isSelected && styles.radioActive]}>
+            {isSelected && <View style={styles.radioDot} />}
+          </View>
 
-        {/* Label */}
-        <Text style={[styles.soundLabel, isSelected && styles.soundLabelActive]} numberOfLines={1}>
-          {getSoundLabel(item)}
-        </Text>
+          {/* Label */}
+          <Text style={[styles.soundLabel, isSelected && styles.soundLabelActive]} numberOfLines={1}>
+            {getSoundLabel(item)}
+          </Text>
 
-        {/* Playing indicator */}
-        {isPlaying && (
-          <Text style={styles.playingIcon}>|||</Text>
-        )}
-      </TouchableOpacity>
+          {/* Playing indicator */}
+          {isPlaying && (
+            <Text style={styles.playingIcon}>|||</Text>
+          )}
+        </TouchableOpacity>
+      </GlassCard>
     );
   };
 
@@ -267,22 +298,22 @@ export default function SoundsScreen() {
           style={styles.chipScroll}
         >
           <TouchableOpacity
-            style={[styles.chip, !activeCategory && styles.chipActive]}
-            onPress={() => handleChipPress(null)}
+            style={[styles.chip, !activeCategory && !visibleCategory && styles.chipActive]}
+            onPress={() => { handleChipPress(null); }}
             activeOpacity={ACTIVE_OPACITY.default}
           >
-            <Text style={[styles.chipText, !activeCategory && styles.chipTextActive]}>
+            <Text style={[styles.chipText, !activeCategory && !visibleCategory && styles.chipTextActive]}>
               {t.soundBrowser.all}
             </Text>
           </TouchableOpacity>
           {SOUND_CATEGORIES.map(({ key, labelKey }) => (
             <TouchableOpacity
               key={key}
-              style={[styles.chip, activeCategory === key && styles.chipActive]}
+              style={[styles.chip, (activeCategory === key || (!activeCategory && visibleCategory === key)) && styles.chipActive]}
               onPress={() => handleChipPress(activeCategory === key ? null : key)}
               activeOpacity={ACTIVE_OPACITY.default}
             >
-              <Text style={[styles.chipText, activeCategory === key && styles.chipTextActive]}>
+              <Text style={[styles.chipText, (activeCategory === key || (!activeCategory && visibleCategory === key)) && styles.chipTextActive]}>
                 {getCategoryLabel(key)}
               </Text>
             </TouchableOpacity>
@@ -298,6 +329,8 @@ export default function SoundsScreen() {
           contentContainerStyle={styles.listContent}
           stickySectionHeadersEnabled={false}
           showsVerticalScrollIndicator={false}
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={VIEWABILITY_CONFIG}
         />
 
         {/* Done Button */}
@@ -317,8 +350,8 @@ export default function SoundsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: BG_PRIMARY },
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.bgPrimary },
   container: { flex: 1 },
 
   // Header
@@ -331,32 +364,38 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   backButton: { paddingVertical: SPACING.xs, paddingRight: SPACING.lg },
-  backText: { fontSize: FONT_SIZE.bodySmall, color: TEXT_MUTED, fontFamily: FONT_FAMILY.medium },
-  headerTitle: { fontSize: FONT_SIZE.body, color: TEXT_PRIMARY, fontFamily: FONT_FAMILY.semiBold },
+  backText: { fontSize: FONT_SIZE.bodySmall, color: c.textMuted, fontFamily: FONT_FAMILY.medium },
+  headerTitle: { fontSize: FONT_SIZE.body, color: c.textPrimary, fontFamily: FONT_FAMILY.semiBold },
 
   // Chips
-  chipScroll: { maxHeight: 48, marginBottom: SPACING.lg },
+  chipScroll: { maxHeight: 56, marginBottom: SPACING.lg },
   chipRow: {
     paddingHorizontal: SCREEN_PADDING.horizontal,
     gap: SPACING.sm,
     alignItems: 'center',
   },
   chip: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.base,
     borderRadius: RADIUS.full,
-    backgroundColor: BG_TERTIARY,
+    backgroundColor: c.bgTertiary,
+    minHeight: 36,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   chipActive: {
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
   },
   chipText: {
-    fontSize: FONT_SIZE.caption,
+    fontSize: FONT_SIZE.bodySmall,
     fontFamily: FONT_FAMILY.medium,
-    color: TEXT_MUTED,
+    color: c.textMuted,
+    lineHeight: Math.round(FONT_SIZE.bodySmall * 1.2),
+    includeFontPadding: false,
   },
   chipTextActive: {
-    color: ACCENT_PRIMARY_TEXT,
+    color: c.accentText,
+    fontFamily: FONT_FAMILY.semiBold,
   },
 
   // Section headers
@@ -368,7 +407,7 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     fontSize: FONT_SIZE.labelSmall,
     fontFamily: FONT_FAMILY.medium,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -381,51 +420,49 @@ const styles = StyleSheet.create({
 
   // Sound row
   soundRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: BG_SECONDARY,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.base,
     marginBottom: SPACING.sm,
   },
-  soundRowActive: {
-    borderWidth: 1,
-    borderColor: ACCENT_PRIMARY,
+  soundRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: SPACING.lg,
+    minHeight: 56,
   },
   radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: BG_TERTIARY,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2.5,
+    borderColor: '#9CA3AF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.base,
+    marginRight: 12,
   },
   radioActive: {
-    borderColor: ACCENT_PRIMARY,
+    borderColor: c.accent,
+    backgroundColor: 'rgba(232, 168, 56, 0.10)',
   },
   radioDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: ACCENT_PRIMARY,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: c.accent,
   },
   soundLabel: {
     flex: 1,
     fontSize: FONT_SIZE.body,
     fontFamily: FONT_FAMILY.regular,
-    color: TEXT_MUTED,
+    color: c.textMuted,
   },
   soundLabelActive: {
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     fontFamily: FONT_FAMILY.medium,
   },
   playingIcon: {
     fontSize: FONT_SIZE.caption,
     fontFamily: FONT_FAMILY.bold,
-    color: ACCENT_PRIMARY,
+    color: c.accent,
     letterSpacing: -1,
     marginLeft: SPACING.sm,
   },
@@ -439,10 +476,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_PADDING.horizontal,
     paddingBottom: SPACING['5xl'],
     paddingTop: SPACING.lg,
-    backgroundColor: BG_PRIMARY,
+    backgroundColor: c.bgPrimary,
   },
   doneButton: {
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
     paddingVertical: SPACING.lg,
     borderRadius: RADIUS.full,
     alignItems: 'center',
@@ -450,7 +487,7 @@ const styles = StyleSheet.create({
   doneText: {
     fontSize: FONT_SIZE.body,
     fontFamily: FONT_FAMILY.semiBold,
-    color: ACCENT_PRIMARY_TEXT,
+    color: c.accentText,
   },
 
   // Import button
@@ -463,7 +500,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.base,
     borderRadius: RADIUS.full,
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     gap: SPACING.xs,
     elevation: 4,
     shadowColor: '#000',
@@ -474,12 +511,12 @@ const styles = StyleSheet.create({
   importIcon: {
     fontSize: FONT_SIZE.heading3,
     fontFamily: FONT_FAMILY.regular,
-    color: ACCENT_PRIMARY,
+    color: c.accent,
     marginTop: -1,
   },
   importText: {
     fontSize: FONT_SIZE.caption,
     fontFamily: FONT_FAMILY.medium,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
   },
 });
