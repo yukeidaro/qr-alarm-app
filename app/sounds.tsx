@@ -52,6 +52,8 @@ export default function SoundsScreen() {
   const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
   const [visibleCategory, setVisibleCategory] = useState<SoundCategory | null>(null);
   const previewRef = useRef<any>(null);
+  const chipScrollRef = useRef<ScrollView>(null);
+  const chipPositions = useRef<Record<string, number>>({});
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -125,10 +127,19 @@ export default function SoundsScreen() {
     router.back();
   };
 
+  const scrollToChip = (key: string | null) => {
+    const chipKey = key ?? 'all';
+    const x = chipPositions.current[chipKey];
+    if (x !== undefined) {
+      chipScrollRef.current?.scrollTo({ x: Math.max(0, x - SPACING.lg), animated: true });
+    }
+  };
+
   const handleChipPress = (category: SoundCategory | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveCategory(category);
     setVisibleCategory(null);
+    scrollToChip(category);
   };
 
   const handleViewableItemsChanged = useCallback(
@@ -137,6 +148,7 @@ export default function SoundsScreen() {
       const firstVisible = viewableItems.find(item => item.section);
       if (firstVisible?.section) {
         setVisibleCategory(firstVisible.section.category);
+        scrollToChip(firstVisible.section.category);
       }
     },
     [activeCategory]
@@ -292,6 +304,7 @@ export default function SoundsScreen() {
 
         {/* Category Filter Chips */}
         <ScrollView
+          ref={chipScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipRow}
@@ -301,6 +314,7 @@ export default function SoundsScreen() {
             style={[styles.chip, !activeCategory && !visibleCategory && styles.chipActive]}
             onPress={() => { handleChipPress(null); }}
             activeOpacity={ACTIVE_OPACITY.default}
+            onLayout={(e) => { chipPositions.current['all'] = e.nativeEvent.layout.x; }}
           >
             <Text style={[styles.chipText, !activeCategory && !visibleCategory && styles.chipTextActive]}>
               {t.soundBrowser.all}
@@ -312,6 +326,7 @@ export default function SoundsScreen() {
               style={[styles.chip, (activeCategory === key || (!activeCategory && visibleCategory === key)) && styles.chipActive]}
               onPress={() => handleChipPress(activeCategory === key ? null : key)}
               activeOpacity={ACTIVE_OPACITY.default}
+              onLayout={(e) => { chipPositions.current[key] = e.nativeEvent.layout.x; }}
             >
               <Text style={[styles.chipText, (activeCategory === key || (!activeCategory && visibleCategory === key)) && styles.chipTextActive]}>
                 {getCategoryLabel(key)}
