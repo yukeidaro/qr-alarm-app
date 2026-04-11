@@ -10,6 +10,12 @@ import {
 import * as TaskManager from 'expo-task-manager';
 import { Alarm } from './storageService';
 import { t } from '../i18n';
+import {
+  isAlarmKitAvailable,
+  scheduleAlarmWithKit,
+  scheduleSnoozeWithKit,
+  cancelAlarmWithKit,
+} from './alarmKitService';
 
 const SNOOZE_MINUTES = 5;
 const isWeb = Platform.OS === 'web';
@@ -91,7 +97,23 @@ export async function setupNotifications(): Promise<void> {
 
 export async function requestPermissions(): Promise<boolean> {
   if (isWeb) return false;
-  const { status } = await Notifications.requestPermissionsAsync();
+
+  // Request notification permissions (needed for Android + iOS fallback)
+  const { status } = await Notifications.requestPermissionsAsync({
+    ios: {
+      allowAlert: true,
+      allowBadge: false,
+      allowSound: true,
+      provideAppNotificationSettings: true,
+    },
+  });
+
+  // Also request AlarmKit permission on iOS
+  if (isAlarmKitAvailable()) {
+    const { requestAlarmKitPermission } = require('./alarmKitService');
+    await requestAlarmKitPermission();
+  }
+
   return status === 'granted';
 }
 
@@ -99,6 +121,13 @@ export async function scheduleAlarm(alarm: Alarm): Promise<string> {
   if (isWeb) return '';
   await cancelAlarm(alarm.id);
   if (!alarm.enabled) return '';
+
+  // iOS: use AlarmKit for system-level alarm (works on lock screen, DND, etc.)
+  if (isAlarmKitAvailable()) {
+    const success = await scheduleAlarmWithKit(alarm);
+    if (success) return alarm.id;
+    // Fall through to notification-based scheduling if AlarmKit fails
+  }
 
   const content: Notifications.NotificationContentInput = {
     title: t.notification.title,
@@ -154,6 +183,13 @@ export async function scheduleAlarm(alarm: Alarm): Promise<string> {
 
 export async function scheduleSnooze(alarm: Alarm): Promise<string> {
   if (isWeb) return '';
+
+  // iOS: use AlarmKit for snooze
+  if (isAlarmKitAvailable()) {
+    const success = await scheduleSnoozeWithKit(alarm);
+    if (success) return `${alarm.id}_snooze`;
+  }
+
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: t.notification.snoozeTitle,
@@ -175,6 +211,13 @@ export async function scheduleSnooze(alarm: Alarm): Promise<string> {
 
 export async function cancelAlarm(alarmId: string): Promise<void> {
   if (isWeb) return;
+
+  // Cancel from AlarmKit (iOS)
+  if (isAlarmKitAvailable()) {
+    await cancelAlarmWithKit(alarmId);
+  }
+
+  // Cancel from notification system (both platforms — fallback + Android)
   await Notifications.cancelScheduledNotificationAsync(alarmId);
   for (let day = 0; day < 7; day++) {
     try {

@@ -27,7 +27,11 @@
           "es"
         ],
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["audio", "remote-notification"]
+        "UIBackgroundModes": ["audio", "remote-notification"],
+        "NSAlarmKitUsageDescription": "ScanAlarm uses AlarmKit to ensure your alarms ring reliably, even when your phone is locked or in Do Not Disturb mode."
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.yuasano.qralarm"]
       }
     },
     "android": {
