@@ -72,7 +72,16 @@ export default function OnboardingScreen() {
     );
   };
 
-  const handleOpenSettings = () => {
+  const handleOpenFocusSettings = async () => {
+    if (Platform.OS === 'ios') {
+      const focusUrl = 'App-Prefs:FOCUS';
+      const canOpen = await Linking.canOpenURL(focusUrl);
+      if (canOpen) {
+        Linking.openURL(focusUrl);
+        return;
+      }
+    }
+    // Fallback
     if (Platform.OS === 'ios') {
       Linking.openURL('app-settings:');
     } else {
@@ -156,7 +165,7 @@ export default function OnboardingScreen() {
         <Text style={styles.tipTitle}>{t.onboardingFlow.soundTipTitle}</Text>
         <Text style={styles.tipDesc}>{t.onboardingFlow.soundTipDesc}</Text>
         {Platform.OS === 'android' && (
-          <TouchableOpacity onPress={handleOpenSettings} activeOpacity={ACTIVE_OPACITY.default}>
+          <TouchableOpacity onPress={() => Linking.openSettings()} activeOpacity={ACTIVE_OPACITY.default}>
             <Text style={styles.tipLink}>{t.onboardingFlow.openSettings}</Text>
           </TouchableOpacity>
         )}
@@ -167,7 +176,7 @@ export default function OnboardingScreen() {
         <View style={styles.tipCard}>
           <Text style={styles.tipTitle}>{t.onboardingFlow.focusModeTitle}</Text>
           <Text style={styles.tipDesc}>{t.onboardingFlow.focusModeDesc}</Text>
-          <TouchableOpacity onPress={() => Linking.openSettings()} activeOpacity={ACTIVE_OPACITY.default}>
+          <TouchableOpacity onPress={handleOpenFocusSettings} activeOpacity={ACTIVE_OPACITY.default}>
             <Text style={styles.tipLink}>{t.onboardingFlow.focusModeButton}</Text>
           </TouchableOpacity>
         </View>

@@ -302,6 +302,8 @@ export const ja = {
     title: 'アラームが鳴らない？',
     subtitle: 'スマホのシステム設定によってアラームがブロックされている場合があります。以下の設定を確認してください。',
     goToSettings: '設定を開く',
+    goToFocusSettings: '集中モード設定を開く',
+    goToScreenTimeSettings: 'スクリーンタイム設定を開く',
     focusModeTitle: '集中モードでScanAlarmを許可',
     focusStep1: '設定 > 集中モード を開く',
     focusStep2: 'アラームを鳴らしたい集中モードを選択（特に「睡眠」）',

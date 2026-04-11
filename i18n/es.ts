@@ -289,6 +289,8 @@ export const es = {
     title: '¿Tu alarma no suena?',
     subtitle: 'Las alarmas pueden ser bloqueadas por la configuración del sistema. ¡Revisa las siguientes guías!',
     goToSettings: 'Ir a Ajustes',
+    goToFocusSettings: 'Abrir Ajustes de Concentración',
+    goToScreenTimeSettings: 'Abrir Ajustes de Tiempo de Uso',
     focusModeTitle: 'Permitir ScanAlarm en Modo Enfoque',
     focusStep1: 'Ve a Ajustes > Enfoque',
     focusStep2: 'Selecciona el modo de enfoque en el que quieres que suene la alarma (especialmente Sueño)',

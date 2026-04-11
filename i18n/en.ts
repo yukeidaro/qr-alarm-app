@@ -305,6 +305,8 @@ export const en = {
     title: "Your alarm isn't ringing?",
     subtitle: "Alarms may be blocked by your phone's system settings. Check the following guidelines!",
     goToSettings: 'Go to Settings',
+    goToFocusSettings: 'Open Focus Settings',
+    goToScreenTimeSettings: 'Open Screen Time Settings',
     focusModeTitle: 'Allow ScanAlarm in Focus Mode',
     focusStep1: 'Go to Settings > Focus',
     focusStep2: 'Select the focus mode during which you want alarms to ring (especially Sleep)',

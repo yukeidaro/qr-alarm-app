@@ -289,6 +289,8 @@ export const ko = {
     title: '알람이 울리지 않나요?',
     subtitle: '휴대폰 시스템 설정에 의해 알람이 차단될 수 있습니다. 다음 가이드를 확인하세요!',
     goToSettings: '설정 열기',
+    goToFocusSettings: '집중 모드 설정 열기',
+    goToScreenTimeSettings: '스크린 타임 설정 열기',
     focusModeTitle: '집중 모드에서 ScanAlarm 허용',
     focusStep1: '설정 > 집중 모드로 이동',
     focusStep2: '알람을 울리고 싶은 집중 모드를 선택 (특히 수면)',
