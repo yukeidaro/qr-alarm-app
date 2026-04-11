@@ -62,11 +62,34 @@ function getNextAlarmText(alarms: Alarm[]): string | null {
   for (const alarm of enabled) {
     const alarmMinutes = alarm.hour * 60 + alarm.minute;
     let diff = alarmMinutes - nowMinutes;
-    if (diff <= 0) diff += 24 * 60;
+
+    if (alarm.repeatDays.length > 0) {
+      const today = now.getDay();
+      if (diff > 0 && alarm.repeatDays.includes(today)) {
+        // Today, still ahead
+      } else {
+        // Find next repeat day
+        let daysAhead = 0;
+        for (let d = 0; d <= 7; d++) {
+          const checkDay = (today + (diff <= 0 ? d + 1 : d)) % 7;
+          if (d === 0 && diff > 0) {
+            if (alarm.repeatDays.includes(today)) { daysAhead = 0; break; }
+          }
+          if (alarm.repeatDays.includes(checkDay)) {
+            daysAhead = diff <= 0 ? d + 1 : d;
+            break;
+          }
+        }
+        diff = daysAhead * 24 * 60 + alarmMinutes - nowMinutes;
+      }
+    } else {
+      if (diff <= 0) diff += 24 * 60;
+    }
+
     if (diff < minDiff) minDiff = diff;
   }
 
-  if (minDiff === Infinity) return null;
+  if (minDiff === Infinity || minDiff <= 0) return null;
   const hours = Math.floor(minDiff / 60);
   const minutes = minDiff % 60;
   return formatNextAlarm(hours, minutes);
@@ -132,10 +155,12 @@ export default function HomeScreen() {
     const update = () => {
       const now = new Date();
       setCurrentTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+      // Also refresh the next-alarm countdown text
+      setNextAlarmText(getNextAlarmText(alarms));
     };
     const interval = setInterval(update, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [alarms]);
 
   const loadAlarms = useCallback(async () => {
     const loaded = await getAlarms();

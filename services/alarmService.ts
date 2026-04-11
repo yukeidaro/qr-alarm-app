@@ -197,6 +197,39 @@ export async function cancelAlarm(alarmId: string): Promise<void> {
   }
 }
 
+/**
+ * Re-schedule ALL enabled alarms.
+ * Must be called on every app startup — iOS clears pending notifications
+ * after app updates, force-quit, or device restart.
+ */
+export async function rescheduleAllAlarms(): Promise<void> {
+  if (isWeb) return;
+  try {
+    const { getAlarms } = require('./storageService');
+    const alarms: Alarm[] = await getAlarms();
+    const enabled = alarms.filter((a) => a.enabled);
+
+    // Cancel all existing scheduled notifications first to avoid duplicates
+    await Notifications.cancelAllScheduledNotificationsAsync();
+
+    // Re-schedule each enabled alarm (scheduleAlarm calls cancelAlarm internally,
+    // but that's a harmless no-op since we just cancelled everything)
+    for (const alarm of enabled) {
+      try {
+        await scheduleAlarm(alarm);
+      } catch {
+        // Non-fatal — continue with other alarms
+      }
+    }
+
+    // Verify: log how many notifications are now scheduled
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    console.log(`[AlarmService] Re-scheduled ${enabled.length} alarms (${scheduled.length} notifications pending)`);
+  } catch (e) {
+    console.error('[AlarmService] Failed to reschedule alarms:', e);
+  }
+}
+
 export async function scheduleTestAlarm(): Promise<string> {
   if (isWeb) return '';
   const id = await Notifications.scheduleNotificationAsync({

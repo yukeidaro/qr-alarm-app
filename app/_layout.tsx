@@ -11,7 +11,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
-import { setupNotifications } from '../services/alarmService';
+import { setupNotifications, rescheduleAllAlarms } from '../services/alarmService';
 import { getAlarms, Alarm } from '../services/storageService';
 import { isAdAvailable, initializeAdMob } from '../services/adService';
 import { ThemeProvider, useTheme } from '../theme';
@@ -51,6 +51,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     setupNotifications();
+
+    // Re-schedule all alarms on every app launch.
+    // iOS clears pending notifications after app updates / force-quit / reboot.
+    rescheduleAllAlarms();
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
       async (response) => {
