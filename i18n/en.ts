@@ -38,6 +38,7 @@ export const en = {
     // Welcome
     welcomeTitle: 'Welcome to ScanAlarm',
     welcomeSubtitle: 'An alarm that makes sure you actually get up.',
+    appDescription: "This alarm won't stop until you scan a QR code or barcode. Place the code somewhere you have to walk to — your bathroom, kitchen, or front door — and you'll never oversleep again.",
     nameLabel: 'Nickname',
     namePlaceholder: 'What should we call you?',
     // Permissions
@@ -49,6 +50,9 @@ export const en = {
     soundTipTitle: 'Sound & vibration',
     soundTipDesc: 'ScanAlarm plays through silent mode. For best results, keep your phone volume up before bed.',
     openSettings: 'Open device settings',
+    focusModeTitle: 'Focus / Sleep Mode',
+    focusModeDesc: 'Allow ScanAlarm in Focus Mode so alarms ring during Sleep or Do Not Disturb.',
+    focusModeButton: 'Open Settings',
     // Ready
     readyTitle: 'All set!',
     readySubtitle: 'Here are some tips to get started.',
@@ -190,6 +194,8 @@ export const en = {
     snoozeBody: 'Snooze ended!',
     testTitle: 'ScanAlarm Test',
     testBody: 'Scan to dismiss!',
+    snoozeAction: 'Snooze',
+    dismissAction: 'Dismiss',
   },
 
   // Sound Browser
@@ -266,4 +272,68 @@ export const en = {
     voice_cheerful_en_3: 'Cheerful 3 (EN)',
     voice_okiro_ja: 'Wake Up! (JA)',
   } as Record<string, string>,
+
+  // Settings
+  settings: {
+    title: 'Settings',
+    profile: 'Profile',
+    profileName: 'Nickname',
+    profileNamePlaceholder: 'What should we call you?',
+    alarmDefaults: 'Alarm Defaults',
+    defaultSound: 'Default Sound',
+    defaultSnooze: 'Snooze',
+    qrManagement: 'QR Code Management',
+    qrManagementDesc: 'Manage registered QR codes and barcodes',
+    theme: 'Theme',
+    darkMode: 'Dark Mode',
+    darkModeDesc: 'Switch to a dark color scheme',
+    about: 'About',
+    version: 'Version',
+    privacyPolicy: 'Privacy Policy',
+    savedToast: 'Saved',
+    soundOutput: 'Sound Output',
+    soundOutputDesc: 'Choose where alarm sound plays',
+    soundOutputDevice: 'Device',
+    soundOutputBluetooth: 'Bluetooth',
+    soundOutputAuto: 'Auto',
+    alarmOptimizationBanner: "Alarm didn't ring?",
+    alarmOptimizationBannerSub: 'Alarm Optimization',
+  },
+
+  // Alarm Optimization
+  alarmOptimization: {
+    title: "Your alarm isn't ringing?",
+    subtitle: "Alarms may be blocked by your phone's system settings. Check the following guidelines!",
+    goToSettings: 'Go to Settings',
+    focusModeTitle: 'Allow ScanAlarm in Focus Mode',
+    focusStep1: 'Go to Settings > Focus',
+    focusStep2: 'Select the focus mode during which you want alarms to ring (especially Sleep)',
+    focusStep3: 'Tap "Allowed Apps" and add ScanAlarm to the list',
+    focusStep4: 'Repeat for each Focus mode you use',
+    downtimeTitle: 'Always Allow During Downtime',
+    downtimeStep1: 'Go to Settings > Screen Time',
+    downtimeStep2: 'Tap "Always Allowed"',
+    downtimeStep3: 'Add ScanAlarm to the list',
+  },
+
+  // Sound Output screen
+  soundOutput: {
+    deviceDesc: 'Play through the built-in speaker',
+    bluetoothDesc: 'Play through connected Bluetooth device',
+    autoDesc: 'Automatically select the best output',
+    note: 'Bluetooth routing depends on your device OS settings. If Bluetooth is not connected, the alarm will play through the device speaker.',
+  },
+
+  // QR Management
+  qrManage: {
+    title: 'QR Code Management',
+    empty: 'No QR codes or barcodes registered yet',
+    emptyHint: 'Tap "Add" to scan one',
+    add: 'Add',
+    deleteTitle: 'Delete QR Code',
+    deleteMessage: (name: string) => `Delete "${name}"?`,
+    cancel: 'Cancel',
+    delete: 'Delete',
+    deleted: 'Deleted',
+  },
 } as const;

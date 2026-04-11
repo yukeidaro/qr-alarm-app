@@ -37,6 +37,7 @@ export const ja = {
     start: 'はじめる',
     welcomeTitle: 'ScanAlarmへようこそ',
     welcomeSubtitle: 'ちゃんと起きるためのアラームアプリです。',
+    appDescription: 'このアラームはQRコードやバーコードをスキャンするまで止まりません。コードを洗面所やキッチン、玄関など歩いて行かなければならない場所に貼っておけば、もう寝坊しません。',
     nameLabel: 'ニックネーム',
     namePlaceholder: 'なんて呼びましょう？',
     permissionsTitle: '大事な設定',
@@ -47,6 +48,9 @@ export const ja = {
     soundTipTitle: 'サウンドとバイブレーション',
     soundTipDesc: 'ScanAlarmはマナーモードでも鳴ります。就寝前に音量を上げておくと安心です。',
     openSettings: 'デバイス設定を開く',
+    focusModeTitle: '集中モード / おやすみモード',
+    focusModeDesc: 'おやすみモード中でもアラームが鳴るように、ScanAlarmを許可してください。',
+    focusModeButton: '設定を開く',
     readyTitle: '準備完了！',
     readySubtitle: '使い方のヒントをどうぞ。',
     readySubtitleName: (name: string) => `${name}さん、使い方のヒントをどうぞ。`,
@@ -187,6 +191,8 @@ export const ja = {
     snoozeBody: 'スヌーズ終了！',
     testTitle: 'ScanAlarm テスト',
     testBody: 'スキャンして解除！',
+    snoozeAction: 'スヌーズ',
+    dismissAction: '解除',
   },
 
   // Sound Browser
@@ -263,4 +269,68 @@ export const ja = {
     voice_cheerful_en_3: '元気ボイス 3 (英語)',
     voice_okiro_ja: '起きろ！ (日本語)',
   } as Record<string, string>,
+
+  // Settings
+  settings: {
+    title: '設定',
+    profile: 'プロフィール',
+    profileName: 'ニックネーム',
+    profileNamePlaceholder: 'なんて呼びましょう？',
+    alarmDefaults: 'アラーム初期設定',
+    defaultSound: 'デフォルトサウンド',
+    defaultSnooze: 'スヌーズ',
+    qrManagement: 'QRコード管理',
+    qrManagementDesc: '登録済みQRコード・バーコードの管理',
+    theme: 'テーマ',
+    darkMode: 'ダークモード',
+    darkModeDesc: '暗い配色に切り替えます',
+    about: 'アプリについて',
+    version: 'バージョン',
+    privacyPolicy: 'プライバシーポリシー',
+    savedToast: '保存しました',
+    soundOutput: 'サウンド出力先',
+    soundOutputDesc: 'アラーム音の出力先を選択',
+    soundOutputDevice: '本体',
+    soundOutputBluetooth: 'Bluetooth',
+    soundOutputAuto: '自動',
+    alarmOptimizationBanner: 'アラームが鳴らない？',
+    alarmOptimizationBannerSub: 'アラーム最適化',
+  },
+
+  // Alarm Optimization
+  alarmOptimization: {
+    title: 'アラームが鳴らない？',
+    subtitle: 'スマホのシステム設定によってアラームがブロックされている場合があります。以下の設定を確認してください。',
+    goToSettings: '設定を開く',
+    focusModeTitle: '集中モードでScanAlarmを許可',
+    focusStep1: '設定 > 集中モード を開く',
+    focusStep2: 'アラームを鳴らしたい集中モードを選択（特に「睡眠」）',
+    focusStep3: '「許可するApp」をタップし、ScanAlarmを追加',
+    focusStep4: '使用する各集中モードで同じ設定を繰り返す',
+    downtimeTitle: '休止時間中も常に許可',
+    downtimeStep1: '設定 > スクリーンタイム を開く',
+    downtimeStep2: '「常に許可」をタップ',
+    downtimeStep3: 'ScanAlarmをリストに追加',
+  },
+
+  // Sound Output screen
+  soundOutput: {
+    deviceDesc: '本体の内蔵スピーカーから再生',
+    bluetoothDesc: '接続中のBluetoothデバイスから再生',
+    autoDesc: '最適な出力先を自動で選択',
+    note: 'Bluetooth出力はデバイスのOS設定に依存します。Bluetoothが未接続の場合、本体スピーカーから再生されます。',
+  },
+
+  // QR Management
+  qrManage: {
+    title: 'QRコード管理',
+    empty: 'まだQRコード・バーコードが登録されていません',
+    emptyHint: '「追加」をタップしてスキャンしましょう',
+    add: '追加',
+    deleteTitle: 'QRコードを削除',
+    deleteMessage: (name: string) => `「${name}」を削除しますか？`,
+    cancel: 'キャンセル',
+    delete: '削除',
+    deleted: '削除しました',
+  },
 } as const;

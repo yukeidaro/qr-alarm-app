@@ -1,6 +1,10 @@
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SOUND_CATALOG } from '../constants/sounds';
+
+export type SoundOutputMode = 'device' | 'bluetooth' | 'auto';
+const SOUND_OUTPUT_KEY = '@qralarm/sound_output';
 
 let currentSound: Audio.Sound | null = null;
 let vibrationInterval: ReturnType<typeof setInterval> | null = null;
@@ -14,12 +18,35 @@ const PRESET_SOUNDS: Record<string, any> = Object.fromEntries(
 const FADE_IN_DURATION = 30000; // 30 seconds
 const FADE_IN_STEP = 500; // update every 500ms
 
-export async function configureAudio(): Promise<void> {
+export async function getSoundOutputMode(): Promise<SoundOutputMode> {
+  const val = await AsyncStorage.getItem(SOUND_OUTPUT_KEY);
+  if (val === 'device' || val === 'bluetooth' || val === 'auto') return val;
+  return 'auto';
+}
+
+export async function configureAudio(outputMode?: SoundOutputMode): Promise<void> {
+  const mode = outputMode ?? await getSoundOutputMode();
   await Audio.setAudioModeAsync({
     playsInSilentModeIOS: true,
     staysActiveInBackground: true,
     shouldDuckAndroid: false,
+    // When 'device' is selected, allowsRecordingIOS can force audio to
+    // the built-in speaker on some iOS versions by switching the audio
+    // session category, bypassing Bluetooth output.
+    allowsRecordingIOS: mode === 'device',
+    playThroughEarpieceAndroid: false,
   });
+  // If we used the recording trick, immediately disable it to avoid
+  // side-effects on the actual audio session (no mic needed).
+  if (mode === 'device') {
+    await Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      staysActiveInBackground: true,
+      shouldDuckAndroid: false,
+      allowsRecordingIOS: false,
+      playThroughEarpieceAndroid: false,
+    });
+  }
 }
 
 export async function playAlarm(
@@ -27,8 +54,9 @@ export async function playAlarm(
   customUri?: string,
   volume: number = 1.0,
   fadeIn: boolean = false,
+  outputMode?: SoundOutputMode,
 ): Promise<void> {
-  await configureAudio();
+  await configureAudio(outputMode);
   await stopAlarm();
 
   const source = customUri
@@ -42,6 +70,14 @@ export async function playAlarm(
     isLooping: true,
     volume: startVolume,
     shouldPlay: true,
+  });
+
+  // Fallback: manually replay if isLooping fails (known expo-av issue on some devices/formats)
+  sound.setOnPlaybackStatusUpdate((status) => {
+    if (!status.isLoaded) return;
+    if (status.didJustFinish && !status.isLooping) {
+      sound.replayAsync().catch(() => {});
+    }
   });
 
   currentSound = sound;
@@ -104,6 +140,7 @@ export async function previewSound(soundId: string, customUri?: string, volume?:
 
   const { sound } = await Audio.Sound.createAsync(source, {
     shouldPlay: true,
+    isLooping: true,
     volume: volume ?? 0.5,
   });
   return sound;

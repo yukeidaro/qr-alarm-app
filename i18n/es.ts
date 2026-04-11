@@ -32,6 +32,7 @@ export const es = {
     start: 'Comenzar',
     welcomeTitle: 'Bienvenido a ScanAlarm',
     welcomeSubtitle: 'Una alarma que te asegura despertar de verdad.',
+    appDescription: 'Esta alarma no se detiene hasta que escanees un código QR o de barras. Coloca el código en algún lugar al que tengas que caminar — el baño, la cocina o la puerta — y nunca más te quedarás dormido.',
     nameLabel: 'Apodo',
     namePlaceholder: '¿Cómo te llamamos?',
     permissionsTitle: 'Configuración importante',
@@ -42,6 +43,9 @@ export const es = {
     soundTipTitle: 'Sonido y vibración',
     soundTipDesc: 'ScanAlarm suena incluso en modo silencioso. Sube el volumen antes de dormir.',
     openSettings: 'Abrir configuración',
+    focusModeTitle: 'Modo de concentración / Sueño',
+    focusModeDesc: 'Permite ScanAlarm en el modo de concentración para que las alarmas suenen durante No molestar.',
+    focusModeButton: 'Abrir ajustes',
     readyTitle: '¡Todo listo!',
     readySubtitle: 'Algunos consejos para empezar.',
     readySubtitleName: (name: string) => `${name}, algunos consejos para empezar.`,
@@ -175,6 +179,8 @@ export const es = {
     snoozeBody: '¡Fin de la repetición!',
     testTitle: 'ScanAlarm Prueba',
     testBody: '¡Escanea para desactivar!',
+    snoozeAction: 'Repetir',
+    dismissAction: 'Desactivar',
   },
 
   // Sound Browser
@@ -250,4 +256,68 @@ export const es = {
     voice_cheerful_en_3: 'Alegre 3 (EN)',
     voice_okiro_ja: '¡Despierta! (JA)',
   } as Record<string, string>,
+
+  // Settings
+  settings: {
+    title: 'Ajustes',
+    profile: 'Perfil',
+    profileName: 'Apodo',
+    profileNamePlaceholder: '¿Cómo te llamamos?',
+    alarmDefaults: 'Alarma predeterminada',
+    defaultSound: 'Sonido predeterminado',
+    defaultSnooze: 'Repetir',
+    qrManagement: 'Gestión de QR',
+    qrManagementDesc: 'Gestionar códigos QR y códigos de barras',
+    theme: 'Tema',
+    darkMode: 'Modo oscuro',
+    darkModeDesc: 'Cambiar a un esquema de colores oscuro',
+    about: 'Acerca de',
+    version: 'Versión',
+    privacyPolicy: 'Política de privacidad',
+    savedToast: 'Guardado',
+    soundOutput: 'Salida de sonido',
+    soundOutputDesc: 'Elige dónde suena la alarma',
+    soundOutputDevice: 'Dispositivo',
+    soundOutputBluetooth: 'Bluetooth',
+    soundOutputAuto: 'Automático',
+    alarmOptimizationBanner: '¿La alarma no sonó?',
+    alarmOptimizationBannerSub: 'Optimización de alarma',
+  },
+
+  // Alarm Optimization
+  alarmOptimization: {
+    title: '¿Tu alarma no suena?',
+    subtitle: 'Las alarmas pueden ser bloqueadas por la configuración del sistema. ¡Revisa las siguientes guías!',
+    goToSettings: 'Ir a Ajustes',
+    focusModeTitle: 'Permitir ScanAlarm en Modo Enfoque',
+    focusStep1: 'Ve a Ajustes > Enfoque',
+    focusStep2: 'Selecciona el modo de enfoque en el que quieres que suene la alarma (especialmente Sueño)',
+    focusStep3: 'Toca "Apps permitidas" y añade ScanAlarm',
+    focusStep4: 'Repite para cada modo de enfoque que uses',
+    downtimeTitle: 'Permitir siempre durante Tiempo de inactividad',
+    downtimeStep1: 'Ve a Ajustes > Tiempo de uso',
+    downtimeStep2: 'Toca "Permitido siempre"',
+    downtimeStep3: 'Añade ScanAlarm a la lista',
+  },
+
+  // Sound Output screen
+  soundOutput: {
+    deviceDesc: 'Reproducir a través del altavoz integrado',
+    bluetoothDesc: 'Reproducir a través del dispositivo Bluetooth conectado',
+    autoDesc: 'Seleccionar automáticamente la mejor salida',
+    note: 'El enrutamiento Bluetooth depende de la configuración del sistema operativo de tu dispositivo. Si Bluetooth no está conectado, la alarma sonará por el altavoz del dispositivo.',
+  },
+
+  // QR Management
+  qrManage: {
+    title: 'Gestión de QR',
+    empty: 'No hay códigos QR o de barras registrados',
+    emptyHint: 'Toca "Agregar" para escanear uno',
+    add: 'Agregar',
+    deleteTitle: 'Eliminar código QR',
+    deleteMessage: (name: string) => `¿Eliminar "${name}"?`,
+    cancel: 'Cancelar',
+    delete: 'Eliminar',
+    deleted: 'Eliminado',
+  },
 } as const;

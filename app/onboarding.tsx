@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,11 +14,8 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
-import {
-  BG_PRIMARY, BG_SECONDARY, BG_TERTIARY,
-  ACCENT_PRIMARY, ACCENT_PRIMARY_TEXT, TEXT_PRIMARY,
-  TEXT_MUTED, TEXT_SECONDARY, OVERLAY, ACCENT_SUBTLE,
-} from '../constants/colors';
+import { ThemeColors } from '../constants/colors';
+import { useTheme } from '../theme';
 import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
 import { SPACING, SCREEN_PADDING, RADIUS, ACTIVE_OPACITY } from '../constants/spacing';
 import { t } from '../i18n';
@@ -30,6 +27,8 @@ type Step = 'welcome' | 'permissions' | 'ready';
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [step, setStep] = useState<Step>('welcome');
   const [name, setName] = useState('');
   const [notifGranted, setNotifGranted] = useState(false);
@@ -98,6 +97,11 @@ export default function OnboardingScreen() {
       <Text style={styles.title}>{t.onboardingFlow.welcomeTitle}</Text>
       <Text style={styles.subtitle}>{t.onboardingFlow.welcomeSubtitle}</Text>
 
+      {/* App description */}
+      <View style={styles.descriptionCard}>
+        <Text style={styles.descriptionText}>{t.onboardingFlow.appDescription}</Text>
+      </View>
+
       <View style={styles.inputCard}>
         <Text style={styles.inputLabel}>{t.onboardingFlow.nameLabel}</Text>
         <TextInput
@@ -105,7 +109,7 @@ export default function OnboardingScreen() {
           value={name}
           onChangeText={setName}
           placeholder={t.onboardingFlow.namePlaceholder}
-          placeholderTextColor={TEXT_MUTED}
+          placeholderTextColor={colors.textMuted}
           autoFocus
           returnKeyType="done"
           onSubmitEditing={handleNameDone}
@@ -157,6 +161,17 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Focus Mode tip (iOS only) */}
+      {Platform.OS === 'ios' && (
+        <View style={styles.tipCard}>
+          <Text style={styles.tipTitle}>{t.onboardingFlow.focusModeTitle}</Text>
+          <Text style={styles.tipDesc}>{t.onboardingFlow.focusModeDesc}</Text>
+          <TouchableOpacity onPress={() => Linking.openSettings()} activeOpacity={ACTIVE_OPACITY.default}>
+            <Text style={styles.tipLink}>{t.onboardingFlow.focusModeButton}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <TouchableOpacity style={styles.primaryButton} onPress={() => goToStep('ready')} activeOpacity={ACTIVE_OPACITY.default}>
         <Text style={styles.primaryButtonText}>{t.onboardingFlow.next}</Text>
@@ -221,10 +236,10 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: BG_PRIMARY,
+    backgroundColor: c.bgPrimary,
   },
 
   // Skip
@@ -237,7 +252,7 @@ const styles = StyleSheet.create({
   },
   skipButtonText: {
     fontSize: FONT_SIZE.bodySmall,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     fontFamily: FONT_FAMILY.medium,
   },
 
@@ -253,10 +268,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: BG_TERTIARY,
+    backgroundColor: c.bgTertiary,
   },
   dotActive: {
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
     width: 24,
   },
 
@@ -274,23 +289,37 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.heading2,
     fontFamily: FONT_FAMILY.bold,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     textAlign: 'center',
     marginBottom: SPACING.base,
   },
   subtitle: {
     fontSize: FONT_SIZE.bodySmall,
     fontFamily: FONT_FAMILY.regular,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     textAlign: 'center',
     lineHeight: 22,
+    marginBottom: SPACING.xxl,
+  },
+  descriptionCard: {
+    width: '100%',
+    backgroundColor: c.bgSecondary,
+    borderRadius: RADIUS.base,
+    padding: SPACING.lg,
     marginBottom: SPACING['4xl'],
+  },
+  descriptionText: {
+    fontSize: FONT_SIZE.bodySmall,
+    fontFamily: FONT_FAMILY.regular,
+    color: c.textSecondary,
+    lineHeight: 22,
+    textAlign: 'center',
   },
 
   // Name input
   inputCard: {
     width: '100%',
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     borderRadius: RADIUS.base,
     padding: SPACING.xl,
     marginBottom: SPACING.xxl,
@@ -298,7 +327,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: FONT_SIZE.labelSmall,
     fontFamily: FONT_FAMILY.medium,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: SPACING.sm,
@@ -306,16 +335,16 @@ const styles = StyleSheet.create({
   textInput: {
     fontSize: FONT_SIZE.heading3,
     fontFamily: FONT_FAMILY.semiBold,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     paddingVertical: SPACING.sm,
     borderBottomWidth: 2,
-    borderBottomColor: ACCENT_PRIMARY,
+    borderBottomColor: c.accent,
   },
 
   // Buttons
   primaryButton: {
     width: '100%',
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
     paddingVertical: SPACING.lg,
     borderRadius: RADIUS.full,
     alignItems: 'center',
@@ -324,19 +353,19 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: FONT_SIZE.body,
     fontFamily: FONT_FAMILY.semiBold,
-    color: ACCENT_PRIMARY_TEXT,
+    color: c.accentText,
   },
   skipText: {
     fontSize: FONT_SIZE.bodySmall,
     fontFamily: FONT_FAMILY.regular,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     paddingVertical: SPACING.sm,
   },
 
   // Permission card
   permissionCard: {
     width: '100%',
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     borderRadius: RADIUS.base,
     padding: SPACING.xl,
     marginBottom: SPACING.lg,
@@ -353,42 +382,42 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: FONT_SIZE.bodySmall,
     fontFamily: FONT_FAMILY.semiBold,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     marginBottom: SPACING.xxs,
   },
   permissionDesc: {
     fontSize: FONT_SIZE.label,
     fontFamily: FONT_FAMILY.regular,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     lineHeight: 18,
   },
   grantButton: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
   },
   grantButtonText: {
     fontSize: FONT_SIZE.label,
     fontFamily: FONT_FAMILY.semiBold,
-    color: ACCENT_PRIMARY_TEXT,
+    color: c.accentText,
   },
   grantedBadge: {
     paddingHorizontal: SPACING.base,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.full,
-    backgroundColor: OVERLAY.accent10,
+    backgroundColor: c.overlay.accent10,
   },
   grantedText: {
     fontSize: FONT_SIZE.label,
     fontFamily: FONT_FAMILY.semiBold,
-    color: ACCENT_SUBTLE,
+    color: c.accentSubtle,
   },
 
   // Tip card
   tipCard: {
     width: '100%',
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     borderRadius: RADIUS.base,
     padding: SPACING.xl,
     marginBottom: SPACING.xxl,
@@ -396,26 +425,26 @@ const styles = StyleSheet.create({
   tipTitle: {
     fontSize: FONT_SIZE.bodySmall,
     fontFamily: FONT_FAMILY.semiBold,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     marginBottom: SPACING.xs,
   },
   tipDesc: {
     fontSize: FONT_SIZE.label,
     fontFamily: FONT_FAMILY.regular,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     lineHeight: 18,
   },
   tipLink: {
     fontSize: FONT_SIZE.label,
     fontFamily: FONT_FAMILY.medium,
-    color: ACCENT_SUBTLE,
+    color: c.accentSubtle,
     marginTop: SPACING.sm,
   },
 
   // Checklist
   checklistCard: {
     width: '100%',
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     borderRadius: RADIUS.base,
     padding: SPACING.xl,
     marginBottom: SPACING.xxl,
@@ -428,7 +457,7 @@ const styles = StyleSheet.create({
   },
   checkIcon: {
     fontSize: FONT_SIZE.bodySmall,
-    color: ACCENT_PRIMARY,
+    color: c.accent,
     fontFamily: FONT_FAMILY.bold,
     marginTop: 1,
   },
@@ -436,7 +465,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FONT_SIZE.bodySmall,
     fontFamily: FONT_FAMILY.regular,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     lineHeight: 22,
   },
 });

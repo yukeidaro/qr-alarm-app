@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,16 +20,12 @@ import {
   resetSnoozeCount,
   saveSnoozeTime,
 } from '../services/storageService';
-import { playAlarm, stopAlarm } from '../services/audioService';
+import { playAlarm, stopAlarm, getSoundOutputMode } from '../services/audioService';
 import { scheduleSnooze } from '../services/alarmService';
 import { useRewardedAd, AD_UNIT_IDS } from '../services/adService';
 import AdBanner from '../components/AdBanner';
-import {
-  BG_PRIMARY, BG_SECONDARY, BG_URGENCY_1, BG_URGENCY_2,
-  ACCENT_PRIMARY, ACCENT_PRIMARY_TEXT,
-  TEXT_PRIMARY, TEXT_MUTED, TEXT_SECONDARY, ERROR, OVERLAY,
-  WARM_GLOW, WARM_GLOW_STRONG,
-} from '../constants/colors';
+import { ThemeColors } from '../constants/colors';
+import { useTheme } from '../theme';
 import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
 import { SPACING, SCREEN_PADDING, RADIUS, ANIMATION, TIMER, ACTIVE_OPACITY } from '../constants/spacing';
 import { t } from '../i18n';
@@ -40,6 +36,8 @@ export default function RingingScreen() {
   const router = useRouter();
   const { alarmId } = useLocalSearchParams<{ alarmId?: string }>();
   const { showAd: showRewardedAd, isLoaded: rewardedLoaded } = useRewardedAd();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [alarm, setAlarm] = useState<Alarm | null>(null);
   const [alarmReady, setAlarmReady] = useState(!alarmId); // ready immediately if no alarmId
@@ -98,7 +96,9 @@ export default function RingingScreen() {
       const soundId = alarm?.soundId || 'gentle';
       const volume = alarm?.volume ?? 1.0;
       const fadeIn = alarm?.fadeIn ?? false;
-      playAlarm(soundId, undefined, volume, fadeIn);
+      getSoundOutputMode().then((mode) => {
+        playAlarm(soundId, undefined, volume, fadeIn, mode);
+      });
       return () => { /* stopAlarm handled by scan screen or unmount */ };
     }, [alarm, alarmReady])
   );
@@ -164,7 +164,7 @@ export default function RingingScreen() {
       : t.ringing.snooze;
 
   // Dynamic background based on urgency
-  const urgencyBg = snoozeCount >= 2 ? BG_URGENCY_2 : snoozeCount >= 1 ? BG_URGENCY_1 : BG_PRIMARY;
+  const urgencyBg = snoozeCount >= 2 ? colors.bgUrgency2 : snoozeCount >= 1 ? colors.bgUrgency1 : colors.bgPrimary;
 
   const content = (
     <Animated.View style={[styles.innerContainer, { opacity: fadeIn }]}>
@@ -172,9 +172,6 @@ export default function RingingScreen() {
       <View style={styles.topAd}>
         <AdBanner unitId={AD_UNIT_IDS.bannerRinging} />
       </View>
-
-      {/* Warm glow behind time */}
-      <Animated.View style={[styles.timeGlow, { opacity: glowAnim }]} />
 
       {/* Snooze count badge */}
       {snoozeCount > 0 && (
@@ -185,10 +182,17 @@ export default function RingingScreen() {
         </View>
       )}
 
-      {/* Time */}
-      <Animated.Text style={[styles.time, { transform: [{ scale: pulseAnim }] }]}>
-        {displayTime}
-      </Animated.Text>
+      {/* Time + glow container */}
+      <View style={styles.timeContainer}>
+        <Animated.View style={[styles.timeGlow, { opacity: glowAnim }]} />
+        <Animated.Text
+          style={[styles.time, { transform: [{ scale: pulseAnim }] }]}
+          adjustsFontSizeToFit
+          numberOfLines={1}
+        >
+          {displayTime}
+        </Animated.Text>
+      </View>
 
       {/* Greeting */}
       <Text style={styles.greeting}>{t.ringing.greeting}</Text>
@@ -235,7 +239,7 @@ export default function RingingScreen() {
   return <View style={[styles.container, { backgroundColor: urgencyBg }]}>{content}</View>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -247,7 +251,7 @@ const styles = StyleSheet.create({
   },
   bgOverlay: {
     flex: 1,
-    backgroundColor: OVERLAY.black35,
+    backgroundColor: c.overlay.black35,
   },
   topAd: {
     position: 'absolute',
@@ -255,16 +259,21 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
+  timeContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
   timeGlow: {
     position: 'absolute',
-    width: 300,
-    height: 200,
+    width: '90%',
+    height: 180,
     borderRadius: 150,
-    backgroundColor: WARM_GLOW_STRONG,
-    top: '30%',
+    backgroundColor: c.warmGlowStrong,
+    alignSelf: 'center',
   },
   snoozeBadge: {
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.s,
     borderRadius: RADIUS.full,
@@ -275,22 +284,23 @@ const styles = StyleSheet.create({
   },
   snoozeBadgeText: {
     fontSize: FONT_SIZE.labelSmall,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     fontFamily: FONT_FAMILY.regular,
   },
   snoozeBadgeTextUrgent: {
-    color: ERROR,
+    color: c.error,
     fontFamily: FONT_FAMILY.medium,
   },
   time: {
     fontSize: FONT_SIZE.display,
     fontFamily: FONT_FAMILY.bold,
-    color: TEXT_PRIMARY,
-    letterSpacing: 4,
+    color: c.textPrimary,
+    letterSpacing: 2,
+    textAlign: 'center',
   },
   greeting: {
     fontSize: FONT_SIZE.subheading,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     marginTop: SPACING.xl,
     fontFamily: FONT_FAMILY.regular,
   },
@@ -303,7 +313,7 @@ const styles = StyleSheet.create({
   },
   urgencyText: {
     fontSize: FONT_SIZE.bodySmall,
-    color: ERROR,
+    color: c.error,
     fontFamily: FONT_FAMILY.semiBold,
   },
   actions: {
@@ -317,7 +327,7 @@ const styles = StyleSheet.create({
   mainButton: {
     width: '100%',
     borderRadius: RADIUS.full,
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
     paddingVertical: SPACING.xl,
     alignItems: 'center',
     overflow: 'hidden',
@@ -328,29 +338,29 @@ const styles = StyleSheet.create({
     width: '60%',
     height: 20,
     borderRadius: 10,
-    backgroundColor: WARM_GLOW_STRONG,
+    backgroundColor: c.warmGlowStrong,
     alignSelf: 'center',
   },
   mainButtonText: {
     fontSize: FONT_SIZE.body,
-    color: ACCENT_PRIMARY_TEXT,
+    color: c.accentText,
     fontFamily: FONT_FAMILY.semiBold,
   },
   snoozeButton: {
     width: '100%',
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     borderRadius: RADIUS.full,
     paddingVertical: SPACING.lg,
     alignItems: 'center',
   },
   snoozeText: {
     fontSize: FONT_SIZE.caption,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     fontFamily: FONT_FAMILY.regular,
   },
   noQrHint: {
     fontSize: FONT_SIZE.labelSmall,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     fontFamily: FONT_FAMILY.regular,
     textAlign: 'center',
     marginTop: SPACING.xs,

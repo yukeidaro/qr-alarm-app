@@ -32,6 +32,7 @@ export const ko = {
     start: '시작하기',
     welcomeTitle: 'ScanAlarm에 오신 것을 환영합니다',
     welcomeSubtitle: '확실히 일어나게 해주는 알람 앱이에요.',
+    appDescription: '이 알람은 QR 코드나 바코드를 스캔할 때까지 멈추지 않아요. 코드를 욕실, 주방, 현관 등 걸어가야 하는 곳에 붙여두면 다시는 늦잠을 자지 않을 거예요.',
     nameLabel: '닉네임',
     namePlaceholder: '뭐라고 부를까요?',
     permissionsTitle: '중요한 설정',
@@ -42,6 +43,9 @@ export const ko = {
     soundTipTitle: '소리와 진동',
     soundTipDesc: 'ScanAlarm은 무음 모드에서도 울려요. 자기 전에 볼륨을 올려두면 좋아요.',
     openSettings: '기기 설정 열기',
+    focusModeTitle: '집중 모드 / 수면 모드',
+    focusModeDesc: '수면 모드나 방해 금지 모드에서도 알람이 울리도록 ScanAlarm을 허용해 주세요.',
+    focusModeButton: '설정 열기',
     readyTitle: '준비 완료!',
     readySubtitle: '시작하기 위한 팁이에요.',
     readySubtitleName: (name: string) => `${name}님, 시작하기 위한 팁이에요.`,
@@ -175,6 +179,8 @@ export const ko = {
     snoozeBody: '스누즈 종료!',
     testTitle: 'ScanAlarm 테스트',
     testBody: '스캔하여 해제!',
+    snoozeAction: '스누즈',
+    dismissAction: '해제',
   },
 
   // Sound Browser
@@ -250,4 +256,68 @@ export const ko = {
     voice_cheerful_en_3: '밝은 목소리 3 (영어)',
     voice_okiro_ja: '일어나! (일본어)',
   } as Record<string, string>,
+
+  // Settings
+  settings: {
+    title: '설정',
+    profile: '프로필',
+    profileName: '닉네임',
+    profileNamePlaceholder: '뭐라고 부를까요?',
+    alarmDefaults: '알람 기본 설정',
+    defaultSound: '기본 소리',
+    defaultSnooze: '스누즈',
+    qrManagement: 'QR코드 관리',
+    qrManagementDesc: '등록된 QR코드·바코드 관리',
+    theme: '테마',
+    darkMode: '다크 모드',
+    darkModeDesc: '어두운 색상으로 전환합니다',
+    about: '앱 정보',
+    version: '버전',
+    privacyPolicy: '개인정보처리방침',
+    savedToast: '저장되었습니다',
+    soundOutput: '소리 출력',
+    soundOutputDesc: '알람 소리 출력 위치 선택',
+    soundOutputDevice: '기기',
+    soundOutputBluetooth: 'Bluetooth',
+    soundOutputAuto: '자동',
+    alarmOptimizationBanner: '알람이 울리지 않나요?',
+    alarmOptimizationBannerSub: '알람 최적화',
+  },
+
+  // Alarm Optimization
+  alarmOptimization: {
+    title: '알람이 울리지 않나요?',
+    subtitle: '휴대폰 시스템 설정에 의해 알람이 차단될 수 있습니다. 다음 가이드를 확인하세요!',
+    goToSettings: '설정 열기',
+    focusModeTitle: '집중 모드에서 ScanAlarm 허용',
+    focusStep1: '설정 > 집중 모드로 이동',
+    focusStep2: '알람을 울리고 싶은 집중 모드를 선택 (특히 수면)',
+    focusStep3: '"허용된 앱"을 탭하고 ScanAlarm을 추가',
+    focusStep4: '사용하는 각 집중 모드에서 반복',
+    downtimeTitle: '다운타임 중 항상 허용',
+    downtimeStep1: '설정 > 스크린 타임으로 이동',
+    downtimeStep2: '"항상 허용"을 탭',
+    downtimeStep3: 'ScanAlarm을 목록에 추가',
+  },
+
+  // Sound Output screen
+  soundOutput: {
+    deviceDesc: '내장 스피커로 재생',
+    bluetoothDesc: '연결된 Bluetooth 기기로 재생',
+    autoDesc: '최적의 출력을 자동으로 선택',
+    note: 'Bluetooth 라우팅은 기기 OS 설정에 따라 다릅니다. Bluetooth가 연결되지 않은 경우 기기 스피커로 재생됩니다.',
+  },
+
+  // QR Management
+  qrManage: {
+    title: 'QR코드 관리',
+    empty: '아직 등록된 QR코드·바코드가 없습니다',
+    emptyHint: '"추가"를 탭하여 스캔하세요',
+    add: '추가',
+    deleteTitle: 'QR코드 삭제',
+    deleteMessage: (name: string) => `"${name}"을(를) 삭제할까요?`,
+    cancel: '취소',
+    delete: '삭제',
+    deleted: '삭제되었습니다',
+  },
 } as const;
