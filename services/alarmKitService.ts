@@ -1,15 +1,4 @@
 import { Platform } from 'react-native';
-import {
-  configure,
-  requestAuthorization,
-  scheduleAlarm,
-  scheduleRepeatingAlarm,
-  cancelAlarm as cancelAlarmKit,
-  getLaunchPayload,
-  generateUUID,
-  type ScheduleAlarmOptions,
-  type ScheduleRepeatingAlarmOptions,
-} from 'expo-alarm-kit';
 import { Alarm } from './storageService';
 import { t } from '../i18n';
 
@@ -17,17 +6,33 @@ const APP_GROUP_ID = 'group.com.yuasano.qralarm';
 const SNOOZE_MINUTES = 5;
 
 let isConfigured = false;
+let alarmKitModule: any = null;
 
-/** Check if AlarmKit is available (iOS 26+) */
+/** Lazily load the expo-alarm-kit module — returns null if unavailable */
+function getAlarmKitModule(): any {
+  if (alarmKitModule) return alarmKitModule;
+  if (Platform.OS !== 'ios') return null;
+  try {
+    alarmKitModule = require('expo-alarm-kit');
+    return alarmKitModule;
+  } catch {
+    return null;
+  }
+}
+
+/** Check if AlarmKit is available (iOS + module loads successfully) */
 export function isAlarmKitAvailable(): boolean {
-  return Platform.OS === 'ios';
+  if (Platform.OS !== 'ios') return false;
+  return getAlarmKitModule() !== null;
 }
 
 /** Initialize AlarmKit — call once on app start */
 export function initAlarmKit(): boolean {
   if (!isAlarmKitAvailable()) return false;
   try {
-    isConfigured = configure(APP_GROUP_ID);
+    const mod = getAlarmKitModule();
+    if (!mod) return false;
+    isConfigured = mod.configure(APP_GROUP_ID);
     return isConfigured;
   } catch {
     isConfigured = false;
@@ -39,7 +44,9 @@ export function initAlarmKit(): boolean {
 export async function requestAlarmKitPermission(): Promise<boolean> {
   if (!isAlarmKitAvailable() || !isConfigured) return false;
   try {
-    const status = await requestAuthorization();
+    const mod = getAlarmKitModule();
+    if (!mod) return false;
+    const status = await mod.requestAuthorization();
     return status === 'authorized';
   } catch {
     return false;
@@ -80,14 +87,16 @@ export async function scheduleAlarmWithKit(alarm: Alarm): Promise<boolean> {
       // Convert app weekday format (0=Sun..6=Sat) to AlarmKit (1=Sun..7=Sat)
       const weekdays = alarm.repeatDays.map((d) => d + 1);
 
-      const opts: ScheduleRepeatingAlarmOptions = {
+      const opts = {
         id: alarm.id,
         hour: alarm.hour,
         minute: alarm.minute,
         weekdays,
         ...commonOpts,
       };
-      return await scheduleRepeatingAlarm(opts);
+      const mod = getAlarmKitModule();
+      if (!mod) return false;
+      return await mod.scheduleRepeatingAlarm(opts);
     }
 
     // One-time alarm: calculate target date
@@ -98,12 +107,14 @@ export async function scheduleAlarmWithKit(alarm: Alarm): Promise<boolean> {
       target.setDate(target.getDate() + 1);
     }
 
-    const opts: ScheduleAlarmOptions = {
+    const opts = {
       id: alarm.id,
       date: target,
       ...commonOpts,
     };
-    return await scheduleAlarm(opts);
+    const mod = getAlarmKitModule();
+    if (!mod) return false;
+    return await mod.scheduleAlarm(opts);
   } catch (e) {
     console.warn('[AlarmKit] Schedule failed:', e);
     return false;
@@ -118,7 +129,7 @@ export async function scheduleSnoozeWithKit(alarm: Alarm): Promise<boolean> {
     const snoozeId = `${alarm.id}_snooze`;
     const snoozeDate = new Date(Date.now() + SNOOZE_MINUTES * 60 * 1000);
 
-    const opts: ScheduleAlarmOptions = {
+    const opts = {
       id: snoozeId,
       date: snoozeDate,
       title: t.notification.snoozeTitle,
@@ -128,7 +139,9 @@ export async function scheduleSnoozeWithKit(alarm: Alarm): Promise<boolean> {
       stopButtonLabel: t.ringing.dismiss,
       tintColor: '#6C5CE7',
     };
-    return await scheduleAlarm(opts);
+    const mod = getAlarmKitModule();
+    if (!mod) return false;
+    return await mod.scheduleAlarm(opts);
   } catch (e) {
     console.warn('[AlarmKit] Snooze schedule failed:', e);
     return false;
@@ -139,9 +152,10 @@ export async function scheduleSnoozeWithKit(alarm: Alarm): Promise<boolean> {
 export async function cancelAlarmWithKit(alarmId: string): Promise<void> {
   if (!isAlarmKitAvailable() || !isConfigured) return;
   try {
-    await cancelAlarmKit(alarmId);
-    // Also cancel snooze variant
-    await cancelAlarmKit(`${alarmId}_snooze`);
+    const mod = getAlarmKitModule();
+    if (!mod) return;
+    await mod.cancelAlarm(alarmId);
+    await mod.cancelAlarm(`${alarmId}_snooze`);
   } catch {
     // Non-fatal
   }
@@ -155,7 +169,9 @@ export function checkAlarmKitLaunchPayload(): {
 } | null {
   if (!isAlarmKitAvailable() || !isConfigured) return null;
   try {
-    const payload = getLaunchPayload();
+    const mod = getAlarmKitModule();
+    if (!mod) return null;
+    const payload = mod.getLaunchPayload();
     if (!payload) return null;
     const data = payload.payload ? JSON.parse(payload.payload) : { alarmId: payload.alarmId };
     return {

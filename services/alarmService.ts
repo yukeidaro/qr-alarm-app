@@ -110,8 +110,12 @@ export async function requestPermissions(): Promise<boolean> {
 
   // Also request AlarmKit permission on iOS
   if (isAlarmKitAvailable()) {
-    const { requestAlarmKitPermission } = require('./alarmKitService');
-    await requestAlarmKitPermission();
+    try {
+      const { requestAlarmKitPermission } = require('./alarmKitService');
+      await requestAlarmKitPermission();
+    } catch {
+      // Non-fatal — AlarmKit may not be available
+    }
   }
 
   return status === 'granted';
