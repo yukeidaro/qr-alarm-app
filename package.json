@@ -16,7 +16,6 @@
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/slider": "5.0.1",
     "expo": "~54.0.0",
-    "expo-alarm-kit": "^0.1.6",
     "expo-av": "~16.0.8",
     "expo-blur": "~15.0.8",
     "expo-build-properties": "~1.0.10",

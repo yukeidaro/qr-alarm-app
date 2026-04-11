@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { Stack, useRouter, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -15,12 +15,6 @@ import { setupNotifications } from '../services/alarmService';
 import { getAlarms, Alarm } from '../services/storageService';
 import { isAdAvailable, initializeAdMob } from '../services/adService';
 import { ThemeProvider, useTheme } from '../theme';
-import {
-  isAlarmKitAvailable,
-  initAlarmKit,
-  requestAlarmKitPermission,
-  checkAlarmKitLaunchPayload,
-} from '../services/alarmKitService';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -53,41 +47,6 @@ export default function RootLayout() {
   // Initialize AdMob SDK (only in development/production builds, not Expo Go)
   useEffect(() => {
     initializeAdMob();
-  }, []);
-
-  // Initialize AlarmKit (iOS 26+) and request permission
-  useEffect(() => {
-    if (isAlarmKitAvailable()) {
-      const ok = initAlarmKit();
-      if (ok) {
-        requestAlarmKitPermission();
-      }
-    }
-  }, []);
-
-  // Check if app was launched from AlarmKit dismiss/snooze
-  useEffect(() => {
-    if (!isAlarmKitAvailable()) return;
-    const payload = checkAlarmKitLaunchPayload();
-    if (!payload) return;
-    const { alarmId, action } = payload;
-
-    if (action === 'snooze') {
-      router.push({
-        pathname: '/snooze',
-        params: { alarmId: alarmId || 'default' },
-      });
-    } else {
-      // dismiss action — navigate to scan for QR verification
-      if (alarmId) {
-        router.push({
-          pathname: '/scan',
-          params: { mode: 'dismiss', alarmId },
-        });
-      } else {
-        router.push({ pathname: '/ringing', params: { alarmId: '' } });
-      }
-    }
   }, []);
 
   useEffect(() => {
