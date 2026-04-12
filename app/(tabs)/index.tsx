@@ -100,7 +100,6 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
-  const [hasQR, setHasQR] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [dateString, setDateString] = useState('');
@@ -127,8 +126,8 @@ export default function HomeScreen() {
   useEffect(() => {
     if (hasPlayedGreeting.current) {
       setGreetingPhase('done');
-      greetingScale.setValue(0.55);
-      greetingTranslateY.setValue(-50);
+      greetingScale.setValue(1.0);
+      greetingTranslateY.setValue(0);
     }
   }, []);
 
@@ -138,8 +137,8 @@ export default function HomeScreen() {
     setTimeout(() => {
       setGreetingPhase('shrinking');
       Animated.parallel([
-        Animated.spring(greetingScale, { toValue: 0.55, useNativeDriver: true, friction: 8 }),
-        Animated.timing(greetingTranslateY, { toValue: -50, duration: 600, useNativeDriver: true }),
+        Animated.spring(greetingScale, { toValue: 1.0, useNativeDriver: true, friction: 8 }),
+        Animated.timing(greetingTranslateY, { toValue: 0, duration: 600, useNativeDriver: true }),
       ]).start(() => setGreetingPhase('done'));
     }, 500);
   }, []);
@@ -157,7 +156,6 @@ export default function HomeScreen() {
     const sorted = loaded.sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
     setAlarms(sorted);
     const qr = await getRegisteredQR();
-    setHasQR(!!qr);
     const name = await AsyncStorage.getItem(NAME_KEY);
     setGreeting(getGreeting(name));
     setDateString(getDateString());
@@ -243,10 +241,6 @@ export default function HomeScreen() {
 
   const handleAdd = () => router.push('/edit');
 
-  const handleRegisterQR = () => {
-    router.push('/qr-manage');
-  };
-
   const handleOnboardingRegister = async () => {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
     setShowOnboarding(false);
@@ -262,18 +256,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={[styles.qrButton, hasQR && styles.qrButtonRegistered]}
-          onPress={handleRegisterQR}
-          activeOpacity={ACTIVE_OPACITY.default}
-        >
-          <Text style={[styles.qrButtonText, hasQR && styles.qrButtonTextActive]}>
-            {hasQR ? t.home.qrRegistered : t.home.qrRegister}
-          </Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Hero — Greeting */}
       <Animated.View style={[styles.heroSection, { opacity: heroFade }]}>
@@ -378,37 +360,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     backgroundColor: c.bgPrimary,
   },
 
-  // ─── Top Bar ───
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingTop: SPACING['7xl'],
-    paddingHorizontal: SPACING.xxl,
-    paddingBottom: SPACING.xs,
-  },
-  qrButton: {
-    paddingHorizontal: SPACING.base,
-    paddingVertical: SPACING.s,
-    borderRadius: RADIUS.full,
-    backgroundColor: c.bgSecondary,
-  },
-  qrButtonRegistered: {
-    backgroundColor: c.overlay.accent10,
-  },
-  qrButtonText: {
-    fontSize: FONT_SIZE.labelSmall,
-    color: c.textMuted,
-    fontFamily: FONT_FAMILY.medium,
-  },
-  qrButtonTextActive: {
-    color: c.accentSubtle,
-  },
-
   // ─── Hero ───
   heroSection: {
     alignItems: 'center',
-    paddingTop: SPACING.xl,
+    paddingTop: SPACING['7xl'],
     paddingBottom: SPACING['4xl'],
     paddingHorizontal: SPACING.xxl,
   },
@@ -421,10 +376,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     textTransform: 'uppercase',
   },
   heroGreeting: {
-    fontSize: FONT_SIZE.bodySmall,
-    color: c.textMuted,
-    fontFamily: FONT_FAMILY.regular,
-    marginTop: SPACING.base,
+    fontSize: FONT_SIZE.heading3,
+    color: c.textPrimary,
+    fontFamily: FONT_FAMILY.semiBold,
+    marginTop: SPACING.md,
+    textAlign: 'center',
   },
   greetingTypingContainer: {
     position: 'absolute',

@@ -9,6 +9,9 @@ import {
   Platform,
   Linking,
   KeyboardAvoidingView,
+  ScrollView,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -74,7 +77,20 @@ export default function OnboardingScreen() {
   };
 
   const handleOpenFocusSettings = async () => {
-    // Open the app's own notification settings where Time Sensitive toggle lives
+    if (Platform.OS === 'ios') {
+      const focusUrl = 'App-Prefs:FOCUS';
+      const canOpen = await Linking.canOpenURL(focusUrl);
+      if (canOpen) {
+        await Linking.openURL(focusUrl);
+      } else {
+        await Linking.openURL('App-Prefs:');
+      }
+    } else {
+      Linking.openSettings();
+    }
+  };
+
+  const handleOpenNotificationSettings = () => {
     if (Platform.OS === 'ios') {
       Linking.openURL('app-settings:');
     } else {
@@ -112,7 +128,7 @@ export default function OnboardingScreen() {
           onChangeText={setName}
           placeholder={t.onboardingFlow.namePlaceholder}
           placeholderTextColor={colors.textMuted}
-          autoFocus
+          autoFocus={false}
           returnKeyType="done"
           onSubmitEditing={handleNameDone}
         />
@@ -206,6 +222,11 @@ export default function OnboardingScreen() {
         <Text style={styles.focusSettingsButtonText}>{t.onboardingFlow.openFocusSettings}</Text>
       </TouchableOpacity>
 
+      {/* Open Notification Settings button (for Time Sensitive toggle) */}
+      <TouchableOpacity style={styles.focusSecondaryButton} onPress={handleOpenNotificationSettings} activeOpacity={ACTIVE_OPACITY.default}>
+        <Text style={styles.focusSecondaryButtonText}>{t.onboardingFlow.openNotificationSettings}</Text>
+      </TouchableOpacity>
+
       {/* Skip */}
       <TouchableOpacity onPress={() => goToStep('ready')} activeOpacity={ACTIVE_OPACITY.default}>
         <Text style={styles.skipText}>{t.onboardingFlow.focusSkip}</Text>
@@ -265,10 +286,18 @@ export default function OnboardingScreen() {
       </View>
 
       {/* Content */}
-      {step === 'welcome' && renderWelcome()}
-      {step === 'permissions' && renderPermissions()}
-      {step === 'focus' && renderFocusStep()}
-      {step === 'ready' && renderReady()}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {step === 'welcome' && renderWelcome()}
+          {step === 'permissions' && renderPermissions()}
+          {step === 'focus' && renderFocusStep()}
+          {step === 'ready' && renderReady()}
+        </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
@@ -277,6 +306,9 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: c.bgPrimary,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
 
   // Skip
@@ -556,5 +588,19 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: FONT_SIZE.body,
     fontFamily: FONT_FAMILY.semiBold,
     color: c.accentText,
+  },
+  focusSecondaryButton: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: c.textSecondary,
+    marginBottom: SPACING.lg,
+  },
+  focusSecondaryButtonText: {
+    fontSize: FONT_SIZE.body,
+    fontFamily: FONT_FAMILY.medium,
+    color: c.textSecondary,
   },
 });

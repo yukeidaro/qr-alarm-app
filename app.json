@@ -27,7 +27,8 @@
           "es"
         ],
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["audio", "remote-notification"]
+        "UIBackgroundModes": ["audio", "remote-notification"],
+        "NSCameraUsageDescription": "Camera is required to scan QR codes and barcodes to dismiss alarms."
       }
     },
     "android": {

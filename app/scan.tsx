@@ -244,20 +244,48 @@ export default function ScanScreen() {
   }
 
   if (!permission.granted) {
+    const canAskAgain = permission.canAskAgain ?? true;
+
     return (
       <View style={styles.container}>
         <View style={styles.permissionCard}>
           <Ionicons name="camera-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.message}>{t.scan.cameraRequired}</Text>
-          <Text style={styles.permissionHint}>{t.scan.cameraSettingsHint}</Text>
 
-          <TouchableOpacity
-            style={styles.permissionPrimaryButton}
-            onPress={() => Linking.openSettings()}
-            activeOpacity={ACTIVE_OPACITY.default}
-          >
-            <Text style={styles.permissionPrimaryButtonText}>{t.scan.openSettings}</Text>
-          </TouchableOpacity>
+          {canAskAgain ? (
+            <>
+              <Text style={styles.message}>{t.scan.cameraRequired}</Text>
+              <Text style={styles.permissionHint}>{t.scan.cameraAllowHint}</Text>
+
+              <TouchableOpacity
+                style={styles.permissionPrimaryButton}
+                onPress={requestPermission}
+                activeOpacity={ACTIVE_OPACITY.default}
+              >
+                <Text style={styles.permissionPrimaryButtonText}>{t.scan.allowCamera}</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={styles.message}>{t.scan.cameraBlocked}</Text>
+              <Text style={styles.permissionHint}>{t.scan.cameraBlockedHint}</Text>
+
+              <TouchableOpacity
+                style={styles.permissionPrimaryButton}
+                onPress={() => {
+                  if (Platform.OS === 'ios') {
+                    Linking.openURL('App-Prefs:PRIVACY&path=CAMERA').catch(() => {
+                      Linking.openSettings();
+                    });
+                  } else {
+                    Linking.openSettings();
+                  }
+                }}
+                activeOpacity={ACTIVE_OPACITY.default}
+              >
+                <Text style={styles.permissionPrimaryButtonText}>{t.scan.openPrivacySettings}</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
           <TouchableOpacity
             style={styles.permissionSecondaryButton}
@@ -614,23 +642,26 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   permissionCard: {
     alignItems: 'center',
-    paddingHorizontal: SPACING['5xl'],
+    paddingHorizontal: SPACING.xxxl,
+    gap: SPACING.md,
   },
   permissionHint: {
     fontSize: FONT_SIZE.bodySmall,
     color: c.textMuted,
     textAlign: 'center',
-    marginBottom: SPACING.xxl,
+    marginBottom: SPACING.xl,
     fontFamily: FONT_FAMILY.regular,
     lineHeight: 20,
   },
   permissionPrimaryButton: {
     width: '100%',
     backgroundColor: c.accent,
-    paddingVertical: SPACING.lg,
+    paddingVertical: SPACING.xl,
     borderRadius: RADIUS.full,
     alignItems: 'center',
-    marginBottom: SPACING.base,
+    minHeight: 56,
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
   },
   permissionPrimaryButtonText: {
     fontSize: FONT_SIZE.body,
@@ -639,11 +670,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   permissionSecondaryButton: {
     width: '100%',
-    paddingVertical: SPACING.lg,
+    paddingVertical: SPACING.xl,
     borderRadius: RADIUS.full,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: c.textMuted,
+    minHeight: 56,
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: c.textSecondary,
   },
   permissionSecondaryButtonText: {
     fontSize: FONT_SIZE.body,

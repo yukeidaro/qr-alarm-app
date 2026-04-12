@@ -38,7 +38,7 @@ export const en = {
     // Welcome
     welcomeTitle: 'Welcome to ScanAlarm',
     welcomeSubtitle: 'An alarm that makes sure you actually get up.',
-    appDescription: "This alarm won't stop until you scan a QR code or barcode. Place the code somewhere you have to walk to — your bathroom, kitchen, or front door — and you'll never oversleep again.",
+    appDescription: "This alarm won't stop until you scan a QR code or barcode. Even a barcode on any product you've bought — snacks, drinks, anything — works! Place it somewhere you have to walk to, and you'll never hit snooze again.",
     nameLabel: 'Nickname',
     namePlaceholder: 'What should we call you?',
     // Permissions
@@ -59,7 +59,8 @@ export const en = {
     focusGuideStep1: 'Open Settings → ScanAlarm → Notifications',
     focusGuideStep2: 'Turn on "Time Sensitive Notifications"',
     focusGuideStep3: 'This allows alarms to ring through ALL Focus modes (Sleep, DND, Work, etc.)',
-    openFocusSettings: 'Open Notification Settings',
+    openFocusSettings: 'Open Focus Settings',
+    openNotificationSettings: 'Open ScanAlarm Notification Settings',
     focusSkip: 'Skip for now (you can set this later)',
     // Ready
     readyTitle: 'All set!',
@@ -134,6 +135,10 @@ export const en = {
     openSettings: 'Open Settings',
     backToHome: 'Back to Home',
     allowCamera: 'Allow',
+    cameraAllowHint: 'Camera access is needed to dismiss alarms. Tap "Allow" to continue.',
+    cameraBlocked: 'Camera access is blocked',
+    cameraBlockedHint: 'Go to Settings > Privacy & Security > Camera > ScanAlarm to allow access.',
+    openPrivacySettings: 'Open Privacy Settings',
     countdown: (seconds: number) => `${seconds}s remaining`,
     scannedNamePrompt: 'Scanned! Give it a name.',
     nameTitle: 'Name this code',
