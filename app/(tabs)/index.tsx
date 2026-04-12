@@ -106,10 +106,6 @@ export default function HomeScreen() {
   const [dateString, setDateString] = useState('');
   const [nextAlarmText, setNextAlarmText] = useState<string | null>(null);
   const [snoozeBanner, setSnoozeBanner] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(() => {
-    const now = new Date();
-    return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-  });
   const snoozePulse = useRef(new Animated.Value(1)).current;
   const heroFade = useRef(new Animated.Value(0)).current;
 
@@ -117,7 +113,6 @@ export default function HomeScreen() {
   const [greetingPhase, setGreetingPhase] = useState<'typing' | 'shrinking' | 'done'>('typing');
   const greetingScale = useRef(new Animated.Value(1)).current;
   const greetingTranslateY = useRef(new Animated.Value(0)).current;
-  const timeOpacity = useRef(new Animated.Value(0)).current;
   const hasPlayedGreeting = useRef(false);
 
   useEffect(() => {
@@ -134,7 +129,6 @@ export default function HomeScreen() {
       setGreetingPhase('done');
       greetingScale.setValue(0.55);
       greetingTranslateY.setValue(-50);
-      timeOpacity.setValue(1);
     }
   }, []);
 
@@ -146,16 +140,12 @@ export default function HomeScreen() {
       Animated.parallel([
         Animated.spring(greetingScale, { toValue: 0.55, useNativeDriver: true, friction: 8 }),
         Animated.timing(greetingTranslateY, { toValue: -50, duration: 600, useNativeDriver: true }),
-        Animated.timing(timeOpacity, { toValue: 1, duration: 400, delay: 200, useNativeDriver: true }),
       ]).start(() => setGreetingPhase('done'));
     }, 500);
   }, []);
 
   useEffect(() => {
     const update = () => {
-      const now = new Date();
-      setCurrentTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
-      // Also refresh the next-alarm countdown text
       setNextAlarmText(getNextAlarmText(alarms));
     };
     const interval = setInterval(update, 10000);
@@ -285,14 +275,9 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Hero — Time & Greeting */}
+      {/* Hero — Greeting */}
       <Animated.View style={[styles.heroSection, { opacity: heroFade }]}>
         <Text style={styles.heroDateText}>{dateString}</Text>
-
-        {/* Time — hidden during typing phase, fades in after shrink */}
-        <Animated.Text style={[styles.heroTime, { opacity: greetingPhase === 'typing' ? timeOpacity : 1 }]}>
-          {currentTime}
-        </Animated.Text>
 
         {greeting ? (
           <Animated.View
@@ -434,13 +419,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontFamily: FONT_FAMILY.medium,
     marginBottom: SPACING.sm,
     textTransform: 'uppercase',
-  },
-  heroTime: {
-    fontSize: 72,
-    fontFamily: FONT_FAMILY.bold,
-    color: c.textPrimary,
-    letterSpacing: 2,
-    lineHeight: 80,
   },
   heroGreeting: {
     fontSize: FONT_SIZE.bodySmall,

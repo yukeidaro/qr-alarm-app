@@ -19,11 +19,12 @@ import { useTheme } from '../theme';
 import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
 import { SPACING, SCREEN_PADDING, RADIUS, ACTIVE_OPACITY } from '../constants/spacing';
 import { t } from '../i18n';
+import { Ionicons } from '@expo/vector-icons';
 
 const ONBOARDING_KEY = '@qralarm/onboarding_done';
 const NAME_KEY = '@qralarm/user_name';
 
-type Step = 'welcome' | 'permissions' | 'ready';
+type Step = 'welcome' | 'permissions' | 'focus' | 'ready';
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -73,15 +74,7 @@ export default function OnboardingScreen() {
   };
 
   const handleOpenFocusSettings = async () => {
-    if (Platform.OS === 'ios') {
-      const focusUrl = 'App-Prefs:FOCUS';
-      const canOpen = await Linking.canOpenURL(focusUrl);
-      if (canOpen) {
-        Linking.openURL(focusUrl);
-        return;
-      }
-    }
-    // Fallback
+    // Open the app's own notification settings where Time Sensitive toggle lives
     if (Platform.OS === 'ios') {
       Linking.openURL('app-settings:');
     } else {
@@ -171,19 +164,51 @@ export default function OnboardingScreen() {
         )}
       </View>
 
-      {/* Focus Mode tip (iOS only) */}
-      {Platform.OS === 'ios' && (
-        <View style={styles.tipCard}>
-          <Text style={styles.tipTitle}>{t.onboardingFlow.focusModeTitle}</Text>
-          <Text style={styles.tipDesc}>{t.onboardingFlow.focusModeDesc}</Text>
-          <TouchableOpacity onPress={handleOpenFocusSettings} activeOpacity={ACTIVE_OPACITY.default}>
-            <Text style={styles.tipLink}>{t.onboardingFlow.focusModeButton}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Focus Mode tip (iOS only) — now has dedicated step */}
 
-      <TouchableOpacity style={styles.primaryButton} onPress={() => goToStep('ready')} activeOpacity={ACTIVE_OPACITY.default}>
+      <TouchableOpacity style={styles.primaryButton} onPress={() => goToStep(Platform.OS === 'ios' ? 'focus' : 'ready')} activeOpacity={ACTIVE_OPACITY.default}>
         <Text style={styles.primaryButtonText}>{t.onboardingFlow.next}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
+  const renderFocusStep = () => (
+    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <Ionicons name="moon-outline" size={48} color={colors.accent} style={{ marginBottom: SPACING.xl }} />
+      <Text style={styles.title}>{t.onboardingFlow.focusSleepTitle}</Text>
+      <Text style={styles.subtitle}>{t.onboardingFlow.focusSleepDesc}</Text>
+
+      {/* Step-by-step guide */}
+      <View style={styles.guideCard}>
+        <View style={styles.guideStep}>
+          <View style={styles.guideStepNumber}>
+            <Text style={styles.guideStepNumberText}>1</Text>
+          </View>
+          <Text style={styles.guideStepText}>{t.onboardingFlow.focusGuideStep1}</Text>
+        </View>
+        <View style={styles.guideStep}>
+          <View style={styles.guideStepNumber}>
+            <Text style={styles.guideStepNumberText}>2</Text>
+          </View>
+          <Text style={styles.guideStepText}>{t.onboardingFlow.focusGuideStep2}</Text>
+        </View>
+        <View style={styles.guideStep}>
+          <View style={styles.guideStepNumber}>
+            <Text style={styles.guideStepNumberText}>3</Text>
+          </View>
+          <Text style={styles.guideStepText}>{t.onboardingFlow.focusGuideStep3}</Text>
+        </View>
+      </View>
+
+      {/* Open Focus Settings button */}
+      <TouchableOpacity style={styles.focusSettingsButton} onPress={handleOpenFocusSettings} activeOpacity={ACTIVE_OPACITY.default}>
+        <Ionicons name="settings-outline" size={18} color={colors.accentText} />
+        <Text style={styles.focusSettingsButtonText}>{t.onboardingFlow.openFocusSettings}</Text>
+      </TouchableOpacity>
+
+      {/* Skip */}
+      <TouchableOpacity onPress={() => goToStep('ready')} activeOpacity={ACTIVE_OPACITY.default}>
+        <Text style={styles.skipText}>{t.onboardingFlow.focusSkip}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -219,8 +244,10 @@ export default function OnboardingScreen() {
     </Animated.View>
   );
 
-  // Step indicator
-  const steps: Step[] = ['welcome', 'permissions', 'ready'];
+  // Step indicator — iOS has an extra Focus step
+  const steps: Step[] = Platform.OS === 'ios'
+    ? ['welcome', 'permissions', 'focus', 'ready']
+    : ['welcome', 'permissions', 'ready'];
   const currentIndex = steps.indexOf(step);
 
   return (
@@ -240,6 +267,7 @@ export default function OnboardingScreen() {
       {/* Content */}
       {step === 'welcome' && renderWelcome()}
       {step === 'permissions' && renderPermissions()}
+      {step === 'focus' && renderFocusStep()}
       {step === 'ready' && renderReady()}
     </KeyboardAvoidingView>
   );
@@ -476,5 +504,57 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontFamily: FONT_FAMILY.regular,
     color: c.textSecondary,
     lineHeight: 22,
+  },
+
+  // Focus/Sleep guide step
+  guideCard: {
+    width: '100%',
+    backgroundColor: c.bgSecondary,
+    borderRadius: RADIUS.base,
+    padding: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    gap: SPACING.lg,
+  },
+  guideStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.base,
+  },
+  guideStepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: c.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guideStepNumberText: {
+    fontSize: FONT_SIZE.label,
+    fontFamily: FONT_FAMILY.bold,
+    color: c.accentText,
+  },
+  guideStepText: {
+    flex: 1,
+    fontSize: FONT_SIZE.bodySmall,
+    fontFamily: FONT_FAMILY.regular,
+    color: c.textSecondary,
+    lineHeight: 22,
+    paddingTop: 3,
+  },
+  focusSettingsButton: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    backgroundColor: c.accent,
+    paddingVertical: SPACING.lg,
+    borderRadius: RADIUS.full,
+    marginBottom: SPACING.lg,
+  },
+  focusSettingsButtonText: {
+    fontSize: FONT_SIZE.body,
+    fontFamily: FONT_FAMILY.semiBold,
+    color: c.accentText,
   },
 });

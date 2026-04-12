@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
-  TextInput, KeyboardAvoidingView, Platform,
+  TextInput, KeyboardAvoidingView, Platform, Linking,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -181,13 +181,14 @@ export default function ScanScreen() {
         setDismissed(true);
         if (timerRef.current) clearInterval(timerRef.current);
         await stopAlarm();
+        // Get snooze count BEFORE resetting it (for message selection)
+        const snoozeCount = alarmId ? await getSnoozeCount(alarmId) : 0;
         if (alarmId) {
           await resetSnoozeCount(alarmId);
           await clearSnoozeTime(alarmId);
         }
         // Record streak and pick context-aware message
         const streak = await recordDismiss();
-        const snoozeCount = alarmId ? await getSnoozeCount(alarmId) : 0;
         const msgs = t.dismissMessages;
         let msg: string;
         if (snoozeCount === 0 && Math.random() < 0.3) {
@@ -246,8 +247,25 @@ export default function ScanScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.permissionCard}>
+          <Ionicons name="camera-outline" size={48} color={colors.textMuted} />
           <Text style={styles.message}>{t.scan.cameraRequired}</Text>
-          <Button title={t.scan.allowCamera} onPress={requestPermission} />
+          <Text style={styles.permissionHint}>{t.scan.cameraSettingsHint}</Text>
+
+          <TouchableOpacity
+            style={styles.permissionPrimaryButton}
+            onPress={() => Linking.openSettings()}
+            activeOpacity={ACTIVE_OPACITY.default}
+          >
+            <Text style={styles.permissionPrimaryButtonText}>{t.scan.openSettings}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.permissionSecondaryButton}
+            onPress={() => router.back()}
+            activeOpacity={ACTIVE_OPACITY.default}
+          >
+            <Text style={styles.permissionSecondaryButtonText}>{t.scan.backToHome}</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -597,5 +615,39 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   permissionCard: {
     alignItems: 'center',
     paddingHorizontal: SPACING['5xl'],
+  },
+  permissionHint: {
+    fontSize: FONT_SIZE.bodySmall,
+    color: c.textMuted,
+    textAlign: 'center',
+    marginBottom: SPACING.xxl,
+    fontFamily: FONT_FAMILY.regular,
+    lineHeight: 20,
+  },
+  permissionPrimaryButton: {
+    width: '100%',
+    backgroundColor: c.accent,
+    paddingVertical: SPACING.lg,
+    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    marginBottom: SPACING.base,
+  },
+  permissionPrimaryButtonText: {
+    fontSize: FONT_SIZE.body,
+    fontFamily: FONT_FAMILY.semiBold,
+    color: c.accentText,
+  },
+  permissionSecondaryButton: {
+    width: '100%',
+    paddingVertical: SPACING.lg,
+    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: c.textMuted,
+  },
+  permissionSecondaryButtonText: {
+    fontSize: FONT_SIZE.body,
+    fontFamily: FONT_FAMILY.medium,
+    color: c.textSecondary,
   },
 });

@@ -153,7 +153,7 @@ export default function RootLayout() {
       }
     };
 
-    const interval = setInterval(checkAlarmTime, 5000);
+    const interval = setInterval(checkAlarmTime, 1000);
     return () => clearInterval(interval);
   }, []);
 
