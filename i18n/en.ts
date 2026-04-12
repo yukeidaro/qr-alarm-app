@@ -47,6 +47,7 @@ export const en = {
     notificationTitle: 'Notifications',
     notificationDesc: 'Required for alarm to sound on time.',
     allow: 'Allow',
+    enableNotificationFirst: 'Enable notifications first',
     soundTipTitle: 'Sound & vibration',
     soundTipDesc: 'ScanAlarm plays through silent mode. For best results, keep your phone volume up before bed.',
     openSettings: 'Open device settings',

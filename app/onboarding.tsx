@@ -79,11 +79,11 @@ export default function OnboardingScreen() {
   const handleOpenFocusSettings = async () => {
     if (Platform.OS === 'ios') {
       const focusUrl = 'App-Prefs:FOCUS';
-      const canOpen = await Linking.canOpenURL(focusUrl);
+      const canOpen = await Linking.canOpenURL(focusUrl).catch(() => false);
       if (canOpen) {
         await Linking.openURL(focusUrl);
       } else {
-        await Linking.openURL('App-Prefs:');
+        await Linking.openURL('App-Prefs:').catch(() => Linking.openSettings());
       }
     } else {
       Linking.openSettings();
@@ -91,20 +91,11 @@ export default function OnboardingScreen() {
   };
 
   const handleOpenNotificationSettings = () => {
-    if (Platform.OS === 'ios') {
-      Linking.openURL('app-settings:');
-    } else {
-      Linking.openSettings();
-    }
+    Linking.openURL('app-settings:').catch(() => Linking.openSettings());
   };
 
   const handleFinish = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-    router.replace('/');
-  };
-
-  const handleSkipToHome = async () => {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
     router.replace('/');
   };
@@ -136,10 +127,6 @@ export default function OnboardingScreen() {
 
       <TouchableOpacity style={styles.primaryButton} onPress={handleNameDone} activeOpacity={ACTIVE_OPACITY.default}>
         <Text style={styles.primaryButtonText}>{t.onboardingFlow.next}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => goToStep('permissions')} activeOpacity={ACTIVE_OPACITY.default}>
-        <Text style={styles.skipText}>{t.onboardingFlow.skip}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -182,8 +169,16 @@ export default function OnboardingScreen() {
 
       {/* Focus Mode tip (iOS only) — now has dedicated step */}
 
-      <TouchableOpacity style={styles.primaryButton} onPress={() => goToStep(Platform.OS === 'ios' ? 'focus' : 'ready')} activeOpacity={ACTIVE_OPACITY.default}>
-        <Text style={styles.primaryButtonText}>{t.onboardingFlow.next}</Text>
+      <TouchableOpacity
+        style={[styles.primaryButton, !notifGranted && styles.primaryButtonDisabled]}
+        onPress={() => {
+          if (notifGranted) goToStep(Platform.OS === 'ios' ? 'focus' : 'ready');
+        }}
+        activeOpacity={notifGranted ? ACTIVE_OPACITY.default : 1}
+      >
+        <Text style={[styles.primaryButtonText, !notifGranted && styles.primaryButtonTextDisabled]}>
+          {notifGranted ? t.onboardingFlow.next : t.onboardingFlow.enableNotificationFirst}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -218,18 +213,19 @@ export default function OnboardingScreen() {
 
       {/* Open Focus Settings button */}
       <TouchableOpacity style={styles.focusSettingsButton} onPress={handleOpenFocusSettings} activeOpacity={ACTIVE_OPACITY.default}>
-        <Ionicons name="settings-outline" size={18} color={colors.accentText} />
+        <Ionicons name="moon-outline" size={18} color={colors.accentText} />
         <Text style={styles.focusSettingsButtonText}>{t.onboardingFlow.openFocusSettings}</Text>
       </TouchableOpacity>
 
-      {/* Open Notification Settings button (for Time Sensitive toggle) */}
+      {/* Open ScanAlarm Notification Settings button */}
       <TouchableOpacity style={styles.focusSecondaryButton} onPress={handleOpenNotificationSettings} activeOpacity={ACTIVE_OPACITY.default}>
+        <Ionicons name="notifications-outline" size={18} color={colors.textSecondary} />
         <Text style={styles.focusSecondaryButtonText}>{t.onboardingFlow.openNotificationSettings}</Text>
       </TouchableOpacity>
 
-      {/* Skip */}
-      <TouchableOpacity onPress={() => goToStep('ready')} activeOpacity={ACTIVE_OPACITY.default}>
-        <Text style={styles.skipText}>{t.onboardingFlow.focusSkip}</Text>
+      {/* Next button */}
+      <TouchableOpacity style={styles.primaryButton} onPress={() => goToStep('ready')} activeOpacity={ACTIVE_OPACITY.default}>
+        <Text style={styles.primaryButtonText}>{t.onboardingFlow.next}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -273,11 +269,6 @@ export default function OnboardingScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {/* Skip button */}
-      <TouchableOpacity style={styles.skipButton} onPress={handleSkipToHome} activeOpacity={ACTIVE_OPACITY.default}>
-        <Text style={styles.skipButtonText}>{t.onboardingFlow.skip}</Text>
-      </TouchableOpacity>
-
       {/* Step dots */}
       <View style={styles.dotsRow}>
         {steps.map((s, i) => (
@@ -309,20 +300,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-  },
-
-  // Skip
-  skipButton: {
-    position: 'absolute',
-    top: SPACING['7xl'],
-    right: SCREEN_PADDING.horizontal,
-    zIndex: 10,
-    padding: SPACING.sm,
-  },
-  skipButtonText: {
-    fontSize: FONT_SIZE.bodySmall,
-    color: c.textMuted,
-    fontFamily: FONT_FAMILY.medium,
   },
 
   // Dots
@@ -424,13 +401,13 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontFamily: FONT_FAMILY.semiBold,
     color: c.accentText,
   },
-  skipText: {
-    fontSize: FONT_SIZE.bodySmall,
-    fontFamily: FONT_FAMILY.regular,
-    color: c.textMuted,
-    paddingVertical: SPACING.sm,
+  primaryButtonDisabled: {
+    backgroundColor: c.bgTertiary,
+    opacity: 0.6,
   },
-
+  primaryButtonTextDisabled: {
+    color: c.textMuted,
+  },
   // Permission card
   permissionCard: {
     width: '100%',
@@ -591,7 +568,10 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   },
   focusSecondaryButton: {
     width: '100%',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
     paddingVertical: SPACING.lg,
     borderRadius: RADIUS.full,
     borderWidth: 1,

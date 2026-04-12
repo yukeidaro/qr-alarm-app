@@ -273,9 +273,7 @@ export default function ScanScreen() {
                 style={styles.permissionPrimaryButton}
                 onPress={() => {
                   if (Platform.OS === 'ios') {
-                    Linking.openURL('App-Prefs:PRIVACY&path=CAMERA').catch(() => {
-                      Linking.openSettings();
-                    });
+                    Linking.openURL('App-Prefs:PRIVACY&path=CAMERA').catch(() => Linking.openSettings());
                   } else {
                     Linking.openSettings();
                   }
@@ -661,7 +659,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     minHeight: 56,
     justifyContent: 'center',
-    marginBottom: SPACING.md,
   },
   permissionPrimaryButtonText: {
     fontSize: FONT_SIZE.body,

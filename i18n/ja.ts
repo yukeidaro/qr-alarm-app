@@ -45,6 +45,7 @@ export const ja = {
     notificationTitle: '通知',
     notificationDesc: 'アラームを時間通りに鳴らすために必要です。',
     allow: '許可する',
+    enableNotificationFirst: '先に通知を有効にしてください',
     soundTipTitle: 'サウンドとバイブレーション',
     soundTipDesc: 'ScanAlarmはマナーモードでも鳴ります。就寝前に音量を上げておくと安心です。',
     openSettings: 'デバイス設定を開く',

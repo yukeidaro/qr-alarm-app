@@ -40,6 +40,7 @@ export const ko = {
     notificationTitle: '알림',
     notificationDesc: '알람을 제때 울리려면 필요해요.',
     allow: '허용',
+    enableNotificationFirst: '먼저 알림을 활성화하세요',
     soundTipTitle: '소리와 진동',
     soundTipDesc: 'ScanAlarm은 무음 모드에서도 울려요. 자기 전에 볼륨을 올려두면 좋아요.',
     openSettings: '기기 설정 열기',
