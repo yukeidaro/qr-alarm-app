@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScanAlarm - Privacy Policy / プライバシーポリシー</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #1a1a2e;
+      --muted: #555;
+      --accent: #4a6cf7;
+      --border: #e0e0e0;
+      --section-bg: #f8f9fc;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a2e;
+        --text: #e8e8f0;
+        --muted: #a0a0b8;
+        --accent: #6b8cff;
+        --border: #2e2e48;
+        --section-bg: #22223a;
+      }
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
+        "Noto Sans JP", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      padding: 0 16px;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 0 80px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    header .subtitle {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .lang-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 24px 0 32px;
+    }
+    .lang-toggle button {
+      padding: 8px 20px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--section-bg);
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .section { display: none; }
+    .section.visible { display: block; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 36px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--accent);
+      display: inline-block;
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 24px 0 8px;
+    }
+    p, li {
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    ul {
+      padding-left: 1.4em;
+      margin-bottom: 12px;
+    }
+    li { margin-bottom: 6px; }
+    .highlight {
+      background: var(--section-bg);
+      border-left: 4px solid var(--accent);
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+    }
+    .highlight p { margin-bottom: 0; }
+    .contact-box {
+      background: var(--section-bg);
+      padding: 20px 24px;
+      border-radius: 12px;
+      margin: 20px 0;
+    }
+    .contact-box a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .contact-box a:hover { text-decoration: underline; }
+    footer {
+      text-align: center;
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ScanAlarm</h1>
+      <p class="subtitle">Privacy Policy / プライバシーポリシー</p>
+      <p class="subtitle">Last Updated / 最終更新日: 2026-04-01</p>
+    </header>
+
+    <div class="lang-toggle">
+      <button id="btn-ja" class="active" onclick="switchLang('ja')">日本語</button>
+      <button id="btn-en" onclick="switchLang('en')">English</button>
+    </div>
+
+    <!-- ===== 日本語 ===== -->
+    <div id="section-ja" class="section visible">
+      <h2>はじめに</h2>
+      <p>本プライバシーポリシーは、Yu Asano（個人開発者）が提供するモバイルアプリケーション「ScanAlarm」（バンドルID: com.yuasano.qralarm、以下「本アプリ」）におけるユーザー情報の取り扱いについて説明するものです。</p>
+      <p>本アプリは、QRコード／バーコードをスキャンしてアラームを解除する目覚まし時計アプリです。</p>
+
+      <div class="highlight">
+        <p><strong>重要：</strong>本アプリは、個人情報を収集・送信しません。すべてのアラームデータは端末内にのみ保存されます。</p>
+      </div>
+
+      <h2>収集する情報</h2>
+      <h3>本アプリが直接収集する情報</h3>
+      <p>本アプリは、ユーザーの個人情報を一切収集しません。アラームの設定、スヌーズ設定、カスタムサウンドなどのデータはすべて端末のローカルストレージ（AsyncStorage）にのみ保存され、外部サーバーへの送信は行いません。</p>
+
+      <h3>第三者サービスが収集する情報</h3>
+      <p>本アプリは広告配信のためにGoogle AdMob を使用しています。Google AdMob は以下の情報を収集する場合があります：</p>
+      <ul>
+        <li>デバイス識別子（広告ID など）</li>
+        <li>IPアドレス</li>
+        <li>アプリの使用状況に関する情報</li>
+        <li>デバイスの種類・OS バージョンなどの技術情報</li>
+      </ul>
+      <p>詳細については、<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google のプライバシーポリシー</a>をご参照ください。</p>
+
+      <h2>端末の権限について</h2>
+      <h3>カメラ</h3>
+      <p>本アプリは、アラームを解除するためのQRコード／バーコードのスキャンにカメラを使用します。カメラで撮影された画像は端末内でのみ処理され、保存・送信されることはありません。</p>
+
+      <h3>通知</h3>
+      <p>本アプリは、設定されたアラームをお知らせするために通知機能を使用します。通知は端末のローカル通知機能を利用しており、外部サーバーを経由しません。</p>
+
+      <h3>トラッキングの透明性（iOS）</h3>
+      <p>iOS版では、Appleの App Tracking Transparency（ATT）フレームワークに準拠し、広告のパーソナライズのためにトラッキング許可を求めます。ユーザーがトラッキングを拒否した場合、パーソナライズされていない広告が表示されます。</p>
+
+      <h2>広告について</h2>
+      <p>本アプリは、Google AdMob を利用してバナー広告およびリワード広告を表示します。</p>
+      <ul>
+        <li><strong>バナー広告：</strong>画面内に表示される小型の広告です。</li>
+        <li><strong>リワード広告：</strong>ユーザーが任意で視聴することで特典を得られる広告です。</li>
+      </ul>
+      <p>広告配信にあたり、Google が端末情報やデバイス識別子を使用する場合があります。詳細は <a href="https://support.google.com/admob/answer/6128543" target="_blank" rel="noopener">Google AdMob のデータ開示に関する情報</a>をご確認ください。</p>
+
+      <h2>データの保存と管理</h2>
+      <ul>
+        <li>すべてのアプリデータは端末内（AsyncStorage）にのみ保存されます。</li>
+        <li>外部サーバーへのデータ送信は行いません。</li>
+        <li>アプリをアンインストールすると、すべてのデータが削除されます。</li>
+      </ul>
+
+      <h2>子どものプライバシー</h2>
+      <p>本アプリは13歳未満の子どもを対象としていません。13歳未満のお子様が個人情報を提供したことが判明した場合は、速やかに適切な対応を行います。</p>
+
+      <h2>プライバシーポリシーの変更</h2>
+      <p>本プライバシーポリシーは、必要に応じて更新されることがあります。重要な変更がある場合は、本ページの更新日を変更することでお知らせいたします。定期的にご確認いただくことをお勧めします。</p>
+
+      <h2>お問い合わせ</h2>
+      <p>本プライバシーポリシーに関するご質問やご意見がございましたら、以下までご連絡ください。</p>
+      <div class="contact-box">
+        <p><strong>開発者：</strong>Yu Asano</p>
+        <p><strong>メール：</strong><a href="mailto:yu.asano.dev@gmail.com">yu.asano.dev@gmail.com</a></p>
+      </div>
+    </div>
+
+    <!-- ===== English ===== -->
+    <div id="section-en" class="section">
+      <h2>Introduction</h2>
+      <p>This Privacy Policy describes how Yu Asano (individual developer) handles user information in the mobile application "ScanAlarm" (Bundle ID: com.yuasano.qralarm, hereinafter "the App").</p>
+      <p>ScanAlarm is an alarm clock app that requires scanning a QR code or barcode to dismiss alarms.</p>
+
+      <div class="highlight">
+        <p><strong>Important:</strong> This App does not collect or transmit any personal data. All alarm data is stored locally on your device only.</p>
+      </div>
+
+      <h2>Information We Collect</h2>
+      <h3>Information Collected Directly by the App</h3>
+      <p>The App does not collect any personal information from users. All data — including alarm settings, snooze configurations, and custom sounds — is stored exclusively in local storage (AsyncStorage) on your device and is never transmitted to external servers.</p>
+
+      <h3>Information Collected by Third-Party Services</h3>
+      <p>The App uses Google AdMob for advertising. Google AdMob may collect the following information:</p>
+      <ul>
+        <li>Device identifiers (e.g., Advertising ID)</li>
+        <li>IP address</li>
+        <li>App usage information</li>
+        <li>Technical information such as device type and OS version</li>
+      </ul>
+      <p>For more details, please refer to <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</p>
+
+      <h2>Device Permissions</h2>
+      <h3>Camera</h3>
+      <p>The App uses the camera to scan QR codes and barcodes for dismissing alarms. Images captured by the camera are processed locally on your device and are never stored or transmitted.</p>
+
+      <h3>Notifications</h3>
+      <p>The App uses notifications to deliver scheduled alarms. Notifications are handled through the device's local notification system and do not involve any external servers.</p>
+
+      <h3>Tracking Transparency (iOS)</h3>
+      <p>On iOS, the App complies with Apple's App Tracking Transparency (ATT) framework and requests permission for tracking to personalize ads. If you decline tracking, non-personalized ads will be displayed instead.</p>
+
+      <h2>Advertising</h2>
+      <p>The App displays banner ads and rewarded ads through Google AdMob.</p>
+      <ul>
+        <li><strong>Banner Ads:</strong> Small advertisements displayed within the app interface.</li>
+        <li><strong>Rewarded Ads:</strong> Optional video ads that users can watch to receive in-app benefits.</li>
+      </ul>
+      <p>Google may use device information and device identifiers for ad delivery. For more details, see <a href="https://support.google.com/admob/answer/6128543" target="_blank" rel="noopener">Google AdMob's data disclosure information</a>.</p>
+
+      <h2>Data Storage and Management</h2>
+      <ul>
+        <li>All app data is stored locally on your device (AsyncStorage) only.</li>
+        <li>No data is transmitted to external servers.</li>
+        <li>Uninstalling the App will delete all associated data.</li>
+      </ul>
+
+      <h2>Children's Privacy</h2>
+      <p>The App is not intended for children under the age of 13. If we become aware that a child under 13 has provided personal information, we will take appropriate steps to address the situation promptly.</p>
+
+      <h2>Changes to This Privacy Policy</h2>
+      <p>This Privacy Policy may be updated from time to time. Any significant changes will be indicated by updating the "Last Updated" date on this page. We encourage you to review this page periodically.</p>
+
+      <h2>Contact Us</h2>
+      <p>If you have any questions or concerns about this Privacy Policy, please contact us at:</p>
+      <div class="contact-box">
+        <p><strong>Developer:</strong> Yu Asano</p>
+        <p><strong>Email:</strong> <a href="mailto:yu.asano.dev@gmail.com">yu.asano.dev@gmail.com</a></p>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2026 Yu Asano. All rights reserved.</p>
+      <p>ScanAlarm — QR Code Alarm Clock</p>
+    </footer>
+  </div>
+
+  <script>
+    function switchLang(lang) {
+      document.getElementById('section-ja').classList.toggle('visible', lang === 'ja');
+      document.getElementById('section-en').classList.toggle('visible', lang === 'en');
+      document.getElementById('btn-ja').classList.toggle('active', lang === 'ja');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+      document.documentElement.lang = lang;
+    }
+  </script>
+</body>
+</html>
