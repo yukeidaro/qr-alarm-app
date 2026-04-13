@@ -9,6 +9,7 @@ const SOUND_OUTPUT_KEY = '@qralarm/sound_output';
 let currentSound: Audio.Sound | null = null;
 let vibrationInterval: ReturnType<typeof setInterval> | null = null;
 let fadeInInterval: ReturnType<typeof setInterval> | null = null;
+let playLock = false;
 
 // Preset sound map - derived from sound catalog
 const PRESET_SOUNDS: Record<string, any> = Object.fromEntries(
@@ -56,35 +57,41 @@ export async function playAlarm(
   fadeIn: boolean = false,
   outputMode?: SoundOutputMode,
 ): Promise<void> {
-  await configureAudio(outputMode);
-  await stopAlarm();
+  if (playLock) return;
+  playLock = true;
+  try {
+    await configureAudio(outputMode);
+    await stopAlarm();
 
-  const source = customUri
-    ? { uri: customUri }
-    : PRESET_SOUNDS[soundId] || PRESET_SOUNDS.gentle;
+    const source = customUri
+      ? { uri: customUri }
+      : PRESET_SOUNDS[soundId] || PRESET_SOUNDS.gentle;
 
-  const targetVolume = Math.max(0, Math.min(1, volume));
-  const startVolume = fadeIn ? 0.05 : targetVolume;
+    const targetVolume = Math.max(0, Math.min(1, volume));
+    const startVolume = fadeIn ? 0.05 : targetVolume;
 
-  const { sound } = await Audio.Sound.createAsync(source, {
-    isLooping: true,
-    volume: startVolume,
-    shouldPlay: true,
-  });
+    const { sound } = await Audio.Sound.createAsync(source, {
+      isLooping: true,
+      volume: startVolume,
+      shouldPlay: true,
+    });
 
-  // Fallback: manually replay if isLooping fails (known expo-av issue on some devices/formats)
-  sound.setOnPlaybackStatusUpdate((status) => {
-    if (!status.isLoaded) return;
-    if (status.didJustFinish && !status.isLooping) {
-      sound.replayAsync().catch(() => {});
+    // Fallback: manually replay if isLooping fails (known expo-av issue on some devices/formats)
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (!status.isLoaded) return;
+      if (status.didJustFinish && !status.isLooping) {
+        sound.replayAsync().catch(() => {});
+      }
+    });
+
+    currentSound = sound;
+    startVibration();
+
+    if (fadeIn && targetVolume > startVolume) {
+      startFadeIn(sound, startVolume, targetVolume);
     }
-  });
-
-  currentSound = sound;
-  startVibration();
-
-  if (fadeIn && targetVolume > startVolume) {
-    startFadeIn(sound, startVolume, targetVolume);
+  } finally {
+    playLock = false;
   }
 }
 

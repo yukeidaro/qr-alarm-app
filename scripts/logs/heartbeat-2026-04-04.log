@@ -1,0 +1,45 @@
+[2026-04-04 08:30:55] [INFO] ========== Daily Heartbeat Start ==========
+[2026-04-04 08:30:56] [INFO] Project: C:\Users\yuasano\OneDrive - Microsoft\Documents\02 Claude\12-qr-alarm-app
+[2026-04-04 08:30:56] [INFO] Step 1: TypeScript compilation check...
+[2026-04-04 08:31:17] [INFO] TypeScript: PASS (no errors)
+[2026-04-04 08:31:17] [INFO] Step 2: Expo doctor check...
+[2026-04-04 08:32:02] [WARN] Expo Doctor: Issues found
+[2026-04-04 08:32:02] [WARN]   Running 17 checks on your project...
+16/17 checks passed. 1 checks failed. Possible issues detected:
+1 check failed, indicating possible issues with the project.
+Use the --verbose flag to see more details about passed checks.
+
+✖ Check Expo config (app.json/ app.config.js) schema
+Error validating fields in C:\Users\yuasano\OneDrive - Microsoft\Documents\02 Claude\12-qr-alarm-app\app.json:
+ Field: ios - should NOT have additional property 'locales'.
+Advice:
+Resolve schema errors in your app config. Learn more: https://docs.expo.dev/workflow/configuration/
+
+
+[2026-04-04 08:32:02] [INFO] Step 3: Checking remaining tasks...
+[2026-04-04 08:32:02] [INFO]   [DONE] Git repo initialization
+[2026-04-04 08:32:33] [INFO]   [DONE] Fix TypeScript FileSystem error
+[2026-04-04 08:32:34] [INFO]   [DONE] Apple Developer Program 支払い
+[2026-04-04 08:32:34] [INFO]   [DONE] AdMob account + real Ad Unit IDs
+[2026-04-04 08:32:34] [INFO]   [DONE] Create privacy policy
+[2026-04-04 08:32:34] [INFO]   [DONE] App Store screenshots & metadata
+[2026-04-04 08:33:52] [INFO]   [TODO] EAS Build for iOS production
+[2026-04-04 08:33:53] [INFO]   [TODO] Submit to TestFlight
+[2026-04-04 08:33:53] [INFO]   [DONE] Google Play Console registration
+[2026-04-04 08:34:07] [INFO]   [DONE] EAS Build for Android production
+[2026-04-04 08:34:07] [INFO]   [TODO] Submit to Google Play Internal Testing
+[2026-04-04 08:34:07] [INFO]   [DONE] Configure EAS Update for OTA
+[2026-04-04 08:34:07] [INFO]   [TODO] End-to-end verification on devices
+[2026-04-04 08:34:07] [INFO] Completed: 9 / 13
+[2026-04-04 08:34:07] [INFO] Remaining: 4
+[2026-04-04 08:34:07] [INFO] Manual blockers: 3
+[2026-04-04 08:34:07] [INFO] Step 4: Syncing to Microsoft To Do...
+[2026-04-04 08:34:11] [INFO] To Do added: [ScanAlarm] Day 3/5 days left - 4 tasks remaining
+[2026-04-04 08:34:11] [INFO] To Do added: [ScanAlarm] Submit to TestFlight
+[2026-04-04 08:34:13] [INFO] To Do added: [ScanAlarm] Submit to Google Play Internal Testing
+[2026-04-04 08:34:14] [INFO] To Do added: [ScanAlarm] End-to-end verification on devices
+[2026-04-04 08:34:14] [INFO] ========== Heartbeat Summary ==========
+[2026-04-04 08:34:14] [INFO] Sprint Day: 3 / 7 (5 days left)
+[2026-04-04 08:34:14] [INFO] Tasks: 9 done, 4 remaining
+[2026-04-04 08:34:14] [INFO] Manual blockers: 3
+[2026-04-04 08:34:14] [INFO] ========== Heartbeat End ==========

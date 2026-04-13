@@ -2,15 +2,18 @@
  * QR Alarm App — 共通モーダルコンポーネント
  * オーバーレイ付きモーダル。Center / BottomSheet の2レイアウト。
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Modal as RNModal,
   View,
   TouchableOpacity,
   StyleSheet,
+  Platform,
   type ViewStyle,
 } from 'react-native';
-import { BG_MODAL, OVERLAY } from '../constants/colors';
+import { BlurView } from 'expo-blur';
+import { useTheme } from '../theme';
+import { type ThemeColors, type GlassTokens } from '../constants/colors';
 import { RADIUS, SPACING, ACTIVE_OPACITY } from '../constants/spacing';
 
 type ModalLayout = 'center' | 'bottom';
@@ -28,13 +31,16 @@ export default function AppModal({
   visible,
   onClose,
   layout = 'center',
-  overlayOpacity = OVERLAY.black40,
+  overlayOpacity,
   children,
   contentStyle,
 }: AppModalProps) {
+  const { colors, glass, isDark } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, glass), [colors, glass]);
+  const overlayBg = overlayOpacity ?? colors.overlay.black40;
   return (
     <RNModal visible={visible} transparent animationType="fade">
-      <View style={[styles.overlay, { backgroundColor: overlayOpacity }]}>
+      <View style={[styles.overlay, { backgroundColor: overlayBg }]}>
         {onClose && (
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
@@ -46,17 +52,30 @@ export default function AppModal({
           style={[
             styles.content,
             layout === 'bottom' ? styles.bottomContent : styles.centerContent,
+            Platform.OS !== 'ios' && { backgroundColor: colors.bgModal },
             contentStyle,
           ]}
         >
-          {children}
+          {Platform.OS === 'ios' && (
+            <>
+              <BlurView
+                intensity={isDark ? 35 : 25}
+                tint={isDark ? 'dark' : 'light'}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: glass.surface2 }]} />
+            </>
+          )}
+          <View style={{ position: 'relative' }}>
+            {children}
+          </View>
         </View>
       </View>
     </RNModal>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors, g: GlassTokens) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'center',
@@ -64,9 +83,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING['4xl'],
   },
   content: {
-    backgroundColor: BG_MODAL,
     width: '100%',
     padding: SPACING['4xl'],
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: g.border,
   },
   centerContent: {
     borderRadius: RADIUS.xl,

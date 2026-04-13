@@ -153,7 +153,7 @@ export default function AlarmOptimizationScreen() {
             t.alarmOptimization.downtimeStep3,
           ]}
           colors={colors}
-          settingsUrl="App-Prefs:SCREEN_TIME"
+          settingsUrl="app-settings:"
           buttonLabel={t.alarmOptimization.goToScreenTimeSettings}
         />
 

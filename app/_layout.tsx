@@ -11,7 +11,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
-import { setupNotifications, rescheduleAllAlarms } from '../services/alarmService';
+import { setupNotifications, rescheduleAllAlarms, SNOOZE_MINUTES } from '../services/alarmService';
 import { getAlarms, Alarm } from '../services/storageService';
 import { isAdAvailable, initializeAdMob } from '../services/adService';
 import { ThemeProvider, useTheme } from '../theme';
@@ -85,7 +85,7 @@ export default function RootLayout() {
             if (alarm) {
               await incrementSnoozeCount(alarmId);
               await doSnooze(alarm);
-              await saveSnoozeTime(alarmId, Date.now() + 5 * 60 * 1000);
+              await saveSnoozeTime(alarmId, Date.now() + SNOOZE_MINUTES * 60 * 1000);
             }
           }
           router.push({
@@ -153,7 +153,7 @@ export default function RootLayout() {
       }
     };
 
-    const interval = setInterval(checkAlarmTime, 1000);
+    const interval = setInterval(checkAlarmTime, 15000);
     return () => clearInterval(interval);
   }, []);
 

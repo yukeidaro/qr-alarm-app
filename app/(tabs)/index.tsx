@@ -131,16 +131,24 @@ export default function HomeScreen() {
     }
   }, []);
 
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleTypingComplete = useCallback(() => {
     if (hasPlayedGreeting.current) return;
     hasPlayedGreeting.current = true;
-    setTimeout(() => {
+    typingTimeoutRef.current = setTimeout(() => {
       setGreetingPhase('shrinking');
       Animated.parallel([
         Animated.spring(greetingScale, { toValue: 1.0, useNativeDriver: true, friction: 8 }),
         Animated.timing(greetingTranslateY, { toValue: 0, duration: 600, useNativeDriver: true }),
       ]).start(() => setGreetingPhase('done'));
     }, 500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
   }, []);
 
   useEffect(() => {

@@ -95,9 +95,9 @@ export default function RingingScreen() {
       if (!alarmReady) return;
       const soundId = alarm?.soundId || 'gentle';
       const volume = alarm?.volume ?? 1.0;
-      const fadeIn = alarm?.fadeIn ?? false;
+      const useFadeIn = alarm?.fadeIn ?? false;
       getSoundOutputMode().then((mode) => {
-        playAlarm(soundId, undefined, volume, fadeIn, mode);
+        playAlarm(soundId, undefined, volume, useFadeIn, mode);
       });
       return () => { /* stopAlarm handled by scan screen or unmount */ };
     }, [alarm, alarmReady])
@@ -126,8 +126,9 @@ export default function RingingScreen() {
     await incrementSnoozeCount(effectiveId);
     if (alarm) {
       await scheduleSnooze(alarm);
-      await saveSnoozeTime(effectiveId, Date.now() + TIMER.snoozeDuration);
     }
+    // Always save snooze time so countdown works even without alarm data
+    await saveSnoozeTime(effectiveId, Date.now() + TIMER.snoozeDuration);
     navigateToSnooze();
   };
 

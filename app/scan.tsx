@@ -16,9 +16,12 @@ import {
   getSnoozeCount,
   clearSnoozeTime,
   recordDismiss,
+  getAlarms,
+  saveAlarm,
   RegisteredQR,
 } from '../services/storageService';
 import { stopAlarm } from '../services/audioService';
+import { cancelAlarm } from '../services/alarmService';
 import Button from '../components/Button';
 import { ThemeColors } from '../constants/colors';
 import { useTheme } from '../theme';
@@ -122,9 +125,8 @@ export default function ScanScreen() {
     return () => breathe.stop();
   }, []);
 
-  useEffect(() => {
-    if (mode === 'dismiss') stopAlarm();
-  }, [mode]);
+  // Note: do NOT stop alarm here — keep it playing until QR scan succeeds
+  // stopAlarm() is called only in handleBarCodeScanned on successful match
 
   useEffect(() => {
     if (mode !== 'dismiss') return;
@@ -186,6 +188,15 @@ export default function ScanScreen() {
         if (alarmId) {
           await resetSnoozeCount(alarmId);
           await clearSnoozeTime(alarmId);
+          // Cancel any pending snooze notifications
+          await cancelAlarm(alarmId);
+          // Disable one-time alarms after dismiss
+          const alarms = await getAlarms();
+          const dismissedAlarm = alarms.find(a => a.id === alarmId);
+          if (dismissedAlarm && dismissedAlarm.repeatDays.length === 0) {
+            dismissedAlarm.enabled = false;
+            await saveAlarm(dismissedAlarm);
+          }
         }
         // Record streak and pick context-aware message
         const streak = await recordDismiss();
@@ -272,11 +283,7 @@ export default function ScanScreen() {
               <TouchableOpacity
                 style={styles.permissionPrimaryButton}
                 onPress={() => {
-                  if (Platform.OS === 'ios') {
-                    Linking.openURL('App-Prefs:PRIVACY&path=CAMERA').catch(() => Linking.openSettings());
-                  } else {
-                    Linking.openSettings();
-                  }
+                  Linking.openSettings();
                 }}
                 activeOpacity={ACTIVE_OPACITY.default}
               >

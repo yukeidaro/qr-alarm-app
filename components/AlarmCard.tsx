@@ -2,7 +2,7 @@
  * QR Alarm App — AlarmCard
  * フラットカード。スワイプで削除。温もりのある視覚階層。
  */
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,14 +13,12 @@ import {
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import type { Alarm } from '../services/storageService';
-import {
-  BG_PRIMARY, BG_SECONDARY, ACCENT_PRIMARY,
-  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, TEXT_CONTRAST,
-  ERROR_BG, WARM_GLOW, BG_WARM_CARD,
-} from '../constants/colors';
+import { useTheme } from '../theme';
+import { type ThemeColors, DELETE_ACTION_BG } from '../constants/colors';
 import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
 import { SPACING, RADIUS, ACTIVE_OPACITY } from '../constants/spacing';
 import { t, getDayNames } from '../i18n';
+import { GlassCard } from './GlassCard';
 
 const DAY_LABELS = getDayNames();
 
@@ -37,6 +35,8 @@ interface AlarmCardProps {
 
 export default function AlarmCard({ alarm, onToggle, onPress, onDelete }: AlarmCardProps) {
   const swipeableRef = useRef<Swipeable>(null);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const renderRightActions = (
     _progress: Animated.AnimatedInterpolation<number>,
@@ -65,76 +65,76 @@ export default function AlarmCard({ alarm, onToggle, onPress, onDelete }: AlarmC
 
   return (
     <Swipeable ref={swipeableRef} renderRightActions={renderRightActions} overshootRight={false} friction={2}>
-      <TouchableOpacity
-        style={[styles.card, !alarm.enabled && styles.cardDisabled]}
-        onPress={() => onPress(alarm)}
-        activeOpacity={ACTIVE_OPACITY.soft}
-      >
-        {/* Left accent bar — warm indicator */}
-        {alarm.enabled && (
-          <View style={styles.accentBar}>
-            <View style={styles.accentBarGlow} />
-          </View>
-        )}
-
-        <View style={styles.content}>
-          {/* Time — large, thin, breathing */}
-          <View style={styles.timeRow}>
-            <Text style={[styles.time, !alarm.enabled && styles.dimmed]}>
-              {formatTime(alarm.hour, alarm.minute)}
-            </Text>
-          </View>
-
-          {/* Repeat days or one-time label */}
-          {alarm.repeatDays.length > 0 ? (
-            <View style={styles.repeatRow}>
-              {DAY_LABELS.map((label, i) => {
-                const active = alarm.repeatDays.includes(i);
-                return (
-                  <View key={i} style={[styles.dayChip, active && styles.dayChipActive]}>
-                    <Text
-                      style={[
-                        styles.repeatDay,
-                        active && styles.repeatDayActive,
-                        !alarm.enabled && styles.dimmed,
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </View>
-                );
-              })}
+      <GlassCard active={alarm.enabled} style={styles.card}>
+        <TouchableOpacity
+          style={[styles.cardInner, !alarm.enabled && styles.cardDisabled]}
+          onPress={() => onPress(alarm)}
+          activeOpacity={ACTIVE_OPACITY.soft}
+        >
+          {/* Left accent bar — warm indicator */}
+          {alarm.enabled && (
+            <View style={styles.accentBar}>
+              <View style={styles.accentBarGlow} />
             </View>
-          ) : (
-            <Text style={[styles.oneTime, !alarm.enabled && styles.dimmed]}>{t.edit.oneTime}</Text>
           )}
-        </View>
 
-        <Switch
-          value={alarm.enabled}
-          onValueChange={() => onToggle(alarm)}
-          trackColor={{ false: '#DDD8D3', true: ACCENT_PRIMARY }}
-          thumbColor={'#FFFFFF'}
-          style={styles.toggle}
-        />
-      </TouchableOpacity>
+          <View style={styles.content}>
+            {/* Time — large, thin, breathing */}
+            <View style={styles.timeRow}>
+              <Text style={[styles.time, !alarm.enabled && styles.dimmed]}>
+                {formatTime(alarm.hour, alarm.minute)}
+              </Text>
+            </View>
+
+            {/* Repeat days or one-time label */}
+            {alarm.repeatDays.length > 0 ? (
+              <View style={styles.repeatRow}>
+                {DAY_LABELS.map((label, i) => {
+                  const active = alarm.repeatDays.includes(i);
+                  return (
+                    <View key={i} style={[styles.dayChip, active && styles.dayChipActive]}>
+                      <Text
+                        style={[
+                          styles.repeatDay,
+                          active && styles.repeatDayActive,
+                          !alarm.enabled && styles.dimmed,
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={[styles.oneTime, !alarm.enabled && styles.dimmed]}>{t.edit.oneTime}</Text>
+            )}
+          </View>
+
+          <Switch
+            value={alarm.enabled}
+            onValueChange={() => onToggle(alarm)}
+            trackColor={{ false: '#DDD8D3', true: colors.accent }}
+            thumbColor={'#FFFFFF'}
+            style={styles.toggle}
+          />
+        </TouchableOpacity>
+      </GlassCard>
     </Swipeable>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   card: {
+    marginBottom: SPACING.md,
+  },
+  cardInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BG_SECONDARY,
-    borderRadius: RADIUS.base,
     paddingVertical: SPACING.xl,
     paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.md,
-    overflow: 'hidden',
   },
   cardDisabled: {
-    backgroundColor: BG_PRIMARY,
     opacity: 0.7,
   },
   accentBar: {
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 3,
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
   },
   accentBarGlow: {
     position: 'absolute',
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     top: '20%',
     bottom: '20%',
     width: 8,
-    backgroundColor: WARM_GLOW,
+    backgroundColor: c.warmGlow,
     borderRadius: 4,
   },
   content: {
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   time: {
     fontSize: FONT_SIZE.title1,
     fontFamily: FONT_FAMILY.semiBold,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     letterSpacing: 1,
   },
   dimmed: {
@@ -186,26 +186,27 @@ const styles = StyleSheet.create({
   },
   repeatDay: {
     fontSize: FONT_SIZE.nano,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     fontFamily: FONT_FAMILY.regular,
     opacity: 0.3,
   },
   repeatDayActive: {
-    color: ACCENT_PRIMARY,
+    color: c.accent,
     opacity: 1,
     fontFamily: FONT_FAMILY.semiBold,
   },
   oneTime: {
     fontSize: FONT_SIZE.labelSmall,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     marginTop: SPACING.xs,
     fontFamily: FONT_FAMILY.regular,
   },
   toggle: {
     transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }],
+    alignSelf: 'center',
   },
   deleteAction: {
-    backgroundColor: ERROR_BG,
+    backgroundColor: DELETE_ACTION_BG,
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
@@ -214,9 +215,8 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: RADIUS.base,
   },
   deleteActionText: {
-    color: TEXT_CONTRAST,
+    color: '#FFFFFF',
     fontSize: FONT_SIZE.caption,
-    fontWeight: '600',
-    fontFamily: FONT_FAMILY.regular,
+    fontFamily: FONT_FAMILY.semiBold,
   },
 });

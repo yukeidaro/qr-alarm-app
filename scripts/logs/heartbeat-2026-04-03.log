@@ -1,0 +1,33 @@
+[2026-04-03 06:00:04] [INFO] ========== Daily Heartbeat Start ==========
+[2026-04-03 06:00:04] [INFO] Project: C:\Users\yuasano\OneDrive - Microsoft\Documents\02 Claude\12-qr-alarm-app
+[2026-04-03 06:00:04] [INFO] Step 1: TypeScript compilation check...
+[2026-04-03 06:00:16] [INFO] TypeScript: PASS (no errors)
+[2026-04-03 06:00:16] [INFO] Step 2: Expo doctor check...
+[2026-04-03 09:45:36] [INFO] Expo Doctor: PASS
+[2026-04-03 09:45:36] [INFO] Step 3: Checking remaining tasks...
+[2026-04-03 09:45:36] [INFO]   [DONE] Git repo initialization
+[2026-04-03 09:45:45] [INFO]   [DONE] Fix TypeScript FileSystem error
+[2026-04-03 09:45:45] [INFO]   [DONE] Apple Developer Program 支払い
+[2026-04-03 09:45:46] [INFO]   [DONE] AdMob account + real Ad Unit IDs
+[2026-04-03 09:45:46] [INFO]   [DONE] Create privacy policy
+[2026-04-03 09:45:46] [INFO]   [DONE] App Store screenshots & metadata
+[2026-04-03 09:46:26] [INFO]   [TODO] EAS Build for iOS production
+[2026-04-03 09:46:38] [INFO]   [TODO] Submit to TestFlight
+[2026-04-03 09:46:40] [INFO]   [DONE] Google Play Console registration
+[2026-04-03 09:48:35] [INFO]   [TODO] EAS Build for Android production
+[2026-04-03 09:48:36] [INFO]   [TODO] Submit to Google Play Internal Testing
+[2026-04-03 09:48:36] [INFO]   [DONE] Configure EAS Update for OTA
+[2026-04-03 09:48:36] [INFO]   [TODO] End-to-end verification on devices
+[2026-04-03 09:48:36] [INFO] Completed: 8 / 13
+[2026-04-03 09:48:37] [INFO] Remaining: 5
+[2026-04-03 09:48:37] [INFO] Manual blockers: 3
+[2026-04-03 09:48:37] [INFO] Step 4: Syncing to Microsoft To Do...
+[2026-04-03 09:48:43] [INFO] To Do added: [ScanAlarm] Day 2/6 days left - 5 tasks remaining
+[2026-04-03 09:48:44] [INFO] To Do added: [ScanAlarm] Submit to TestFlight
+[2026-04-03 09:48:44] [INFO] To Do added: [ScanAlarm] Submit to Google Play Internal Testing
+[2026-04-03 09:48:45] [INFO] To Do added: [ScanAlarm] End-to-end verification on devices
+[2026-04-03 09:48:45] [INFO] ========== Heartbeat Summary ==========
+[2026-04-03 09:48:45] [INFO] Sprint Day: 2 / 7 (6 days left)
+[2026-04-03 09:48:45] [INFO] Tasks: 8 done, 5 remaining
+[2026-04-03 09:48:45] [INFO] Manual blockers: 3
+[2026-04-03 09:48:45] [INFO] ========== Heartbeat End ==========

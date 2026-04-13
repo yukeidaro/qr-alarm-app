@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -30,22 +30,20 @@ import { scheduleAlarm, cancelAlarm } from '../services/alarmService';
 import { getSoundLabel } from '../services/audioService';
 import { getPendingSound, clearPendingSound } from '../services/soundSelectionStore';
 import Button from '../components/Button';
-import {
-  BG_PRIMARY, BG_SECONDARY, BG_TERTIARY,
-  ACCENT_PRIMARY, ACCENT_PRIMARY_TEXT, TEXT_PRIMARY,
-  TEXT_MUTED, ERROR, OVERLAY, ACCENT_SUBTLE,
-} from '../constants/colors';
+import { useTheme } from '../theme';
+import { ThemeColors } from '../constants/colors';
 import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
 import { SPACING, SCREEN_PADDING, RADIUS, SIZE, ACTIVE_OPACITY, ANIMATION } from '../constants/spacing';
 import { t, getDayNames } from '../i18n';
 
 const DAYS = getDayNames();
 
-function useToast() {
+function useToast(colors: ThemeColors) {
   const translateY = useRef(new Animated.Value(100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const [message, setMessage] = useState('');
   const [visible, setVisible] = useState(false);
+  const toastStyles = useMemo(() => makeToastStyles(colors), [colors]);
 
   const show = (text: string): Promise<void> => {
     return new Promise((resolve) => {
@@ -78,14 +76,14 @@ function useToast() {
   return { show, ToastView };
 }
 
-const toastStyles = StyleSheet.create({
+const makeToastStyles = (c: ThemeColors) => StyleSheet.create({
   container: {
     position: 'absolute',
     bottom: 100,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     paddingHorizontal: SPACING.xxl,
     paddingVertical: SPACING.base,
     borderRadius: RADIUS.full,
@@ -100,11 +98,11 @@ const toastStyles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
   },
   text: {
     fontSize: FONT_SIZE.bodySmall,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     fontFamily: FONT_FAMILY.medium,
     textAlign: 'center',
   },
@@ -112,6 +110,8 @@ const toastStyles = StyleSheet.create({
 
 export default function EditScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isNew = !id;
 
@@ -119,7 +119,7 @@ export default function EditScreen() {
   const [showPicker, setShowPicker] = useState(Platform.OS === 'ios');
   const [hasGlobalQR, setHasGlobalQR] = useState(false);
   const [bgUri, setBgUri] = useState<string | null>(null);
-  const { show: showToast, ToastView } = useToast();
+  const { show: showToast, ToastView } = useToast(colors);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -180,9 +180,6 @@ export default function EditScreen() {
     await saveAlarm(alarm);
     if (alarm.enabled) await scheduleAlarm(alarm);
     else await cancelAlarm(alarm.id);
-    const msgs = t.toast.saved;
-    const msg = msgs[Math.floor(Math.random() * msgs.length)];
-    await showToast(msg);
     router.back();
   };
 
@@ -220,7 +217,7 @@ export default function EditScreen() {
   timeDate.setHours(alarm.hour, alarm.minute, 0, 0);
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG_PRIMARY }}>
+    <View style={{ flex: 1, backgroundColor: colors.bgPrimary }}>
       <Animated.ScrollView style={[styles.container, { opacity: fadeAnim }]} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.headerRow}>
@@ -247,7 +244,7 @@ export default function EditScreen() {
               is24Hour={true}
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={handleTimeChange}
-              textColor={TEXT_PRIMARY}
+              textColor={colors.textPrimary}
               themeVariant="light"
             />
           )}
@@ -300,9 +297,9 @@ export default function EditScreen() {
               step={0.05}
               value={alarm.volume ?? 1.0}
               onValueChange={(val: number) => setAlarm((prev) => ({ ...prev, volume: val }))}
-              minimumTrackTintColor={ACCENT_PRIMARY}
-              maximumTrackTintColor={BG_TERTIARY}
-              thumbTintColor={ACCENT_PRIMARY}
+              minimumTrackTintColor={colors.accent}
+              maximumTrackTintColor={colors.bgTertiary}
+              thumbTintColor={colors.accent}
             />
             <View style={styles.fadeInRow}>
               <View>
@@ -312,23 +309,26 @@ export default function EditScreen() {
               <Switch
                 value={alarm.fadeIn ?? false}
                 onValueChange={(val) => setAlarm((prev) => ({ ...prev, fadeIn: val }))}
-                trackColor={{ false: BG_TERTIARY, true: ACCENT_PRIMARY }}
-                thumbColor={BG_SECONDARY}
+                trackColor={{ false: colors.bgTertiary, true: colors.accent }}
+                thumbColor={colors.bgSecondary}
               />
             </View>
           </View>
 
           <View style={styles.divider} />
 
-          {/* QR status */}
-          <View style={styles.settingRow}>
+          {/* QR status — tap to manage */}
+          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/qr-manage')} activeOpacity={ACTIVE_OPACITY.default}>
             <Text style={styles.settingLabel}>{t.edit.qrBarcode}</Text>
-            <View style={[styles.statusChip, hasGlobalQR && styles.statusChipActive]}>
-              <Text style={[styles.statusChipText, hasGlobalQR && styles.statusChipTextActive]}>
-                {hasGlobalQR ? t.edit.qrRegistered : t.edit.qrNotRegistered}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={[styles.statusChip, hasGlobalQR && styles.statusChipActive]}>
+                <Text style={[styles.statusChipText, hasGlobalQR && styles.statusChipTextActive]}>
+                  {hasGlobalQR ? t.edit.qrRegistered : t.edit.qrNotRegistered}
+                </Text>
+              </View>
+              <Text style={{ color: colors.textMuted, fontSize: 18, marginLeft: 8 }}>›</Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.divider} />
 
@@ -360,8 +360,8 @@ export default function EditScreen() {
             <Switch
               value={alarm.snoozeEnabled ?? true}
               onValueChange={(val) => setAlarm((prev) => ({ ...prev, snoozeEnabled: val }))}
-              trackColor={{ false: BG_TERTIARY, true: ACCENT_PRIMARY }}
-              thumbColor={BG_SECONDARY}
+              trackColor={{ false: colors.bgTertiary, true: colors.accent }}
+              thumbColor={colors.bgSecondary}
             />
           </View>
         </View>
@@ -371,7 +371,7 @@ export default function EditScreen() {
           <Button title={t.edit.save} onPress={handleSave} fullWidth />
           {!isNew && (
             <Button title={t.edit.delete} onPress={handleDelete} variant="ghost" fullWidth
-              textStyle={{ color: ERROR }}
+              textStyle={{ color: colors.error }}
               style={{ marginTop: SPACING.sm }}
             />
           )}
@@ -382,49 +382,49 @@ export default function EditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG_PRIMARY },
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.bgPrimary },
   content: { paddingTop: SPACING['7xl'], paddingHorizontal: SCREEN_PADDING.horizontal, paddingBottom: SCREEN_PADDING.bottom },
 
   // ─── Header ───
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.xl },
   backButton: { paddingVertical: SPACING.xs, paddingRight: SPACING.lg },
-  backText: { fontSize: FONT_SIZE.bodySmall, color: ACCENT_SUBTLE, fontFamily: FONT_FAMILY.medium },
-  headerTitle: { fontSize: FONT_SIZE.body, color: TEXT_PRIMARY, fontFamily: FONT_FAMILY.semiBold },
+  backText: { fontSize: FONT_SIZE.bodySmall, color: c.accentSubtle, fontFamily: FONT_FAMILY.medium },
+  headerTitle: { fontSize: FONT_SIZE.body, color: c.textPrimary, fontFamily: FONT_FAMILY.semiBold },
 
   // ─── Time ───
   timeSection: { alignItems: 'center', marginBottom: SPACING['4xl'], paddingVertical: SPACING.xl },
-  timeDisplay: { fontSize: FONT_SIZE.hero, fontFamily: FONT_FAMILY.bold, color: TEXT_PRIMARY, letterSpacing: 4 },
+  timeDisplay: { fontSize: FONT_SIZE.hero, fontFamily: FONT_FAMILY.bold, color: c.textPrimary, letterSpacing: 4 },
 
   // ─── Settings Card ───
-  settingsCard: { backgroundColor: BG_SECONDARY, borderRadius: RADIUS.base, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xs, marginBottom: SPACING.xxl },
+  settingsCard: { backgroundColor: c.bgSecondary, borderRadius: RADIUS.base, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xs, marginBottom: SPACING.xxl },
   section: { paddingVertical: SPACING.lg },
-  sectionLabel: { fontSize: FONT_SIZE.labelSmall, color: TEXT_MUTED, letterSpacing: 1, fontFamily: FONT_FAMILY.medium, textTransform: 'uppercase', marginBottom: SPACING.base },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: BG_TERTIARY },
+  sectionLabel: { fontSize: FONT_SIZE.labelSmall, color: c.textMuted, letterSpacing: 1, fontFamily: FONT_FAMILY.medium, textTransform: 'uppercase', marginBottom: SPACING.base },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.bgTertiary },
   daysRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  dayButton: { width: SIZE.dayButton, height: SIZE.dayButton, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', backgroundColor: BG_TERTIARY },
-  dayActive: { backgroundColor: ACCENT_PRIMARY },
-  dayText: { fontSize: FONT_SIZE.label, color: TEXT_MUTED, fontFamily: FONT_FAMILY.medium },
-  dayTextActive: { color: ACCENT_PRIMARY_TEXT, fontFamily: FONT_FAMILY.semiBold },
+  dayButton: { width: SIZE.dayButton, height: SIZE.dayButton, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bgTertiary },
+  dayActive: { backgroundColor: c.accent },
+  dayText: { fontSize: FONT_SIZE.label, color: c.textMuted, fontFamily: FONT_FAMILY.medium },
+  dayTextActive: { color: c.accentText, fontFamily: FONT_FAMILY.semiBold },
 
   // ─── Setting Rows ───
   settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SPACING.lg },
-  settingLabel: { fontSize: FONT_SIZE.bodySmall, color: TEXT_PRIMARY, fontFamily: FONT_FAMILY.regular },
+  settingLabel: { fontSize: FONT_SIZE.bodySmall, color: c.textPrimary, fontFamily: FONT_FAMILY.regular },
   settingValueRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
-  settingValue: { fontSize: FONT_SIZE.bodySmall, color: TEXT_MUTED, fontFamily: FONT_FAMILY.regular },
-  settingValueAccent: { color: ACCENT_SUBTLE },
-  chevron: { fontSize: FONT_SIZE.label, color: TEXT_MUTED, fontFamily: FONT_FAMILY.regular, opacity: 0.5 } as const,
-  statusChip: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xxs, borderRadius: RADIUS.full, backgroundColor: BG_TERTIARY },
-  statusChipActive: { backgroundColor: OVERLAY.accent10 },
-  statusChipText: { fontSize: FONT_SIZE.labelSmall, color: TEXT_MUTED, fontFamily: FONT_FAMILY.regular },
-  statusChipTextActive: { color: ACCENT_SUBTLE },
+  settingValue: { fontSize: FONT_SIZE.bodySmall, color: c.textMuted, fontFamily: FONT_FAMILY.regular },
+  settingValueAccent: { color: c.accentSubtle },
+  chevron: { fontSize: FONT_SIZE.label, color: c.textMuted, fontFamily: FONT_FAMILY.regular, opacity: 0.5 } as const,
+  statusChip: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xxs, borderRadius: RADIUS.full, backgroundColor: c.bgTertiary },
+  statusChipActive: { backgroundColor: c.overlay.accent10 },
+  statusChipText: { fontSize: FONT_SIZE.labelSmall, color: c.textMuted, fontFamily: FONT_FAMILY.regular },
+  statusChipTextActive: { color: c.accentSubtle },
   bgClearButton: { paddingBottom: SPACING.sm },
-  bgClearText: { fontSize: FONT_SIZE.label, color: ERROR, fontFamily: FONT_FAMILY.regular },
-  settingHint: { fontSize: FONT_SIZE.labelSmall, color: TEXT_MUTED, fontFamily: FONT_FAMILY.regular, marginTop: SPACING.xxs },
+  bgClearText: { fontSize: FONT_SIZE.label, color: c.error, fontFamily: FONT_FAMILY.regular },
+  settingHint: { fontSize: FONT_SIZE.labelSmall, color: c.textMuted, fontFamily: FONT_FAMILY.regular, marginTop: SPACING.xxs },
 
   // ─── Volume ───
   volumeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  volumeValue: { fontSize: FONT_SIZE.bodySmall, color: ACCENT_SUBTLE, fontFamily: FONT_FAMILY.semiBold },
+  volumeValue: { fontSize: FONT_SIZE.bodySmall, color: c.accentSubtle, fontFamily: FONT_FAMILY.semiBold },
   volumeSlider: { width: '100%', height: 40, marginTop: SPACING.xs },
   fadeInRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.sm },
 

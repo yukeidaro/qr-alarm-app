@@ -11,7 +11,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Alarm } from './storageService';
 import { t } from '../i18n';
 
-const SNOOZE_MINUTES = 5;
+export const SNOOZE_MINUTES = 5;
 const isWeb = Platform.OS === 'web';
 const ALARM_CHANNEL_ID = 'alarm';
 const ALARM_SOUND = 'gentle.wav';
@@ -164,6 +164,10 @@ export async function scheduleAlarm(alarm: Alarm): Promise<string> {
 export async function scheduleSnooze(alarm: Alarm): Promise<string> {
   if (isWeb) return '';
 
+  const snoozeId = `${alarm.id}_snooze`;
+  // Cancel any existing snooze notification first
+  try { await Notifications.cancelScheduledNotificationAsync(snoozeId); } catch {}
+
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: t.notification.snoozeTitle,
@@ -179,6 +183,7 @@ export async function scheduleSnooze(alarm: Alarm): Promise<string> {
       seconds: SNOOZE_MINUTES * 60,
       channelId: ALARM_CHANNEL_ID,
     },
+    identifier: snoozeId,
   });
   return id;
 }
@@ -186,8 +191,13 @@ export async function scheduleSnooze(alarm: Alarm): Promise<string> {
 export async function cancelAlarm(alarmId: string): Promise<void> {
   if (isWeb) return;
 
-  // Cancel from notification system
+  // Cancel main alarm notification
   await Notifications.cancelScheduledNotificationAsync(alarmId);
+  // Cancel any pending snooze notification
+  try {
+    await Notifications.cancelScheduledNotificationAsync(`${alarmId}_snooze`);
+  } catch {}
+  // Cancel day-specific repeat notifications
   for (let day = 0; day < 7; day++) {
     try {
       await Notifications.cancelScheduledNotificationAsync(`${alarmId}_day${day}`);

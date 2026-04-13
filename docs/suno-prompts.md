@@ -1,16 +1,63 @@
 # Scan Alarm — Suno プロンプト集
 
-> Suno Pro で生成。各プロンプトで **30秒** の楽曲を生成し、ループ再生に適した形にする。
-> 生成後 MP3 で書き出し → `assets/sounds/` に配置。
+---
+
+## 手順（これだけ読めばOK）
+
+### 1. Suno で生成
+- https://suno.com にログイン（**Pro/Premier プラン必須**）
+- 各プロンプトをコピペして生成
+- **Duration: 30秒** に設定（Sunoの設定画面で選択）
+- **Instrumental: ON**（Motivational Voice カテゴリだけ OFF）
+
+### 2. ダウンロード
+- 生成された曲を **MP3** でダウンロード
+
+### 3. ファイルを置く場所
+```
+12-qr-alarm-app/assets/sounds/
+```
+（既存の gentle.wav や nature.wav と同じフォルダ）
+
+### 4. ファイル名
+`{カテゴリ}_{バリエーション名}.mp3`
+
+例:
+```
+gentle_aurora.mp3
+kpop_sparkle.mp3
+lofi_morning.mp3
+voice_gentle_ja.mp3
+voice_fire_en.mp3
+```
+
+### 5. 生成後チェック
+- [ ] 30秒でループしたとき不自然な切れ目がないか
+- [ ] 音量が他のサウンドと揃っているか
+- [ ] ファイルサイズ 1MB 以下か
+- [ ] ファイル名が上記の命名規則に従っているか
 
 ---
 
-## 生成ルール
-- **Duration**: 30秒（Suno設定で指定）
-- **Instrumental**: ON（ボーカルなし、Motivational Voice除く）
-- **ファイル命名**: `{category}_{variation}.mp3`（例: `gentle_aurora.mp3`）
-- **品質チェック**: ループ時に不自然な切れ目がないか確認
-- **商用利用**: Suno Pro/Premier プランで生成すること（Free版は商用不可）
+## 生成ルールまとめ
+
+| 項目               | 値                                |
+| ---------------- | -------------------------------- |
+| **長さ**           | **30秒**                          |
+| **形式**           | MP3                              |
+| **Instrumental** | ON（Voice カテゴリのみ OFF）             |
+| **配置先**          | `12-qr-alarm-app/assets/sounds/` |
+| **命名**           | `{category}_{variation}.mp3`     |
+| **プラン**          | Suno Pro/Premier（Free版は商用不可）     |
+
+---
+
+## Suno 設定メモ
+- **Custom Mode** を使う（スタイルプロンプトと歌詞を分けて入力）
+- **Style prompt** に下記のプロンプトをコピペ
+- **Lyrics** は空欄（Voiceカテゴリのみセリフを入力）
+- 重要なワードはプロンプトの先頭に置く（Sunoは先頭を優先する）
+- 4〜7個のキーワードが最適。多すぎると無視される
 
 ---
 
@@ -18,17 +65,17 @@
 
 ### gentle_aurora
 ```
-Soft, dreamy ambient alarm sound. Gentle piano arpeggios with warm pad synths and soft chimes. Slow tempo 70 BPM. Ethereal and calming. Seamless loop. Bright morning atmosphere.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Soft dreamy ambient. Gentle piano arpeggios in C major, warm analog pad synths, crystalline wind chimes every 4 bars. 70 BPM. Ethereal, calming, bright morning light atmosphere. Clean mix, no distortion, no bass. Suitable for waking up gently.
 ```
 
 ### gentle_sunrise
 ```
-Delicate acoustic guitar fingerpicking with light wind chimes and soft marimba. Warm, cozy morning feel. 65 BPM. Minimal and spacious. Easy wake-up alarm tone.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Delicate nylon-string acoustic guitar fingerpicking with light wooden marimba melody and distant tubular bells. 65 BPM. Warm, cozy, minimal and spacious. Soft reverb. No drums, no bass. Like sunrise through curtains.
 ```
 
 ### gentle_cloud
 ```
-Floating ambient texture with soft bells and gentle harp glissandos. Airy, weightless feeling. 60 BPM. Spa-like tranquility. Smooth transitions for seamless looping.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Floating ambient texture with Celtic harp glissandos, soft music box melody, and airy pad synths. 60 BPM. Weightless, spa-like tranquility. High-register only, no low frequencies. Smooth crossfade-friendly ending.
 ```
 
 ---
@@ -37,17 +84,17 @@ Floating ambient texture with soft bells and gentle harp glissandos. Airy, weigh
 
 ### nature_forest
 ```
-Morning forest ambience with birdsong, gentle stream, and soft wooden flute melody. Organic, peaceful. 75 BPM. Natural wake-up sound with melodic elements.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Morning forest soundscape with realistic birdsong and gentle stream. Soft Japanese shakuhachi wooden flute melody over the ambience. 75 BPM. Organic, peaceful, dawn atmosphere. Natural reverb, warm acoustic mix.
 ```
 
 ### nature_beach
 ```
-Ocean waves with ukulele melody and light steel drums. Tropical morning vibe. Relaxed 80 BPM. Warm and inviting. Beach sunrise atmosphere.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Tropical morning soundscape with gentle ocean waves. Bright ukulele melody, light steel drum accents, soft finger-snapped rhythm. 80 BPM. Warm, inviting, Hawaiian sunrise vibe. Clean, airy production.
 ```
 
 ### nature_garden
 ```
-Garden ambience with wind through leaves, distant wind chimes, and gentle acoustic guitar. Spring morning. 70 BPM. Fresh and peaceful.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Spring garden ambience with gentle wind rustling leaves. Simple acoustic guitar arpeggios, distant ceramic wind chimes, soft kalimba melody. 70 BPM. Fresh morning dew atmosphere. Crisp, natural, no compression.
 ```
 
 ---
@@ -56,17 +103,17 @@ Garden ambience with wind through leaves, distant wind chimes, and gentle acoust
 
 ### digital_pulse
 ```
-Clean electronic alarm tone with soft synth pulses and digital arpeggios. Modern, minimal tech sound. 90 BPM. Futuristic but not harsh. Smooth loop point.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Clean minimal electronic. Soft plucked synth pulses, precise digital arpeggios in minor key, subtle side-chained pad. 90 BPM. Modern tech startup aesthetic. Crisp hi-hats, no heavy bass. Futuristic but not harsh. Crystal clear mix.
 ```
 
 ### digital_neon
 ```
-Synthwave-inspired alarm with retro analog synth pads, soft bass pulse, and crystalline digital bells. 85 BPM. Cyberpunk morning aesthetic. Warm yet electronic.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. 1980s synthwave. Warm analog Juno-style synth pads, pulsing Moog bass, crystalline FM digital bells, gated reverb snare. 85 BPM. Neon-lit cyberpunk morning aesthetic. Retro-futuristic, polished production.
 ```
 
 ### digital_matrix
 ```
-Glitchy, rhythmic electronic alarm with filtered beats and sci-fi bleeps. Progressive build. 100 BPM. Attention-grabbing but not aggressive. Clean digital production.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Glitchy IDM-inspired electronic. Filtered granular beats, sci-fi sonar bleeps, rhythmic stuttered synth stabs, subtle vocoder texture. 100 BPM. Attention-grabbing but not aggressive. Clean digital production, stereo panning.
 ```
 
 ---
@@ -75,17 +122,17 @@ Glitchy, rhythmic electronic alarm with filtered beats and sci-fi bleeps. Progre
 
 ### loud_powerup
 ```
-Energetic rock alarm with driving electric guitar riff, punchy drums, and powerful bass. 120 BPM. High energy wake-up call. Bold and impossible to sleep through.
+30-second morning alarm tone, seamless instrumental loop, no fade-out, strong attack from beat one. Energetic punk rock. Distorted power chord guitar riff in E, tight double-kick drums, growling bass guitar, crash cymbal hits. 120 BPM. Raw, punchy, impossible to sleep through. Loud and proud.
 ```
 
 ### loud_brass
 ```
-Bold brass fanfare with trumpets, horns, and marching snare drums. Military reveille style but modern. 110 BPM. Commanding and authoritative wake-up.
+30-second morning alarm tone, seamless instrumental loop, no fade-out, strong attack from beat one. Military reveille meets modern big band. Bright trumpet fanfare, French horn swells, tight marching snare rolls, bass drum quarter notes. 110 BPM. Commanding, authoritative, brass section power.
 ```
 
 ### loud_thunder
 ```
-Epic orchestral alarm with timpani rolls, dramatic strings, and powerful brass hits. Cinematic intensity. 100 BPM. Movie trailer energy. Forces you awake.
+30-second morning alarm tone, seamless instrumental loop, no fade-out, strong attack from beat one. Epic cinematic orchestral. Thundering timpani rolls, dramatic fortissimo strings, massive brass stabs, taiko drum hits. 100 BPM. Hollywood trailer intensity. Forces you awake immediately.
 ```
 
 ---
@@ -94,17 +141,17 @@ Epic orchestral alarm with timpani rolls, dramatic strings, and powerful brass h
 
 ### motivational_champion
 ```
-Uplifting sports anthem with driving drums, inspirational synth melody, and triumphant brass. "You can do it" energy. 128 BPM. Victory lap feeling. Pump-up alarm.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Uplifting sports stadium anthem. Driving four-on-the-floor kick, clap-along snare, soaring synth brass melody, inspirational string risers. 128 BPM. Victory celebration energy. Like walking onto the field. Punchy, triumphant.
 ```
 
 ### motivational_dawn
 ```
-Inspirational cinematic piece with building strings, hopeful piano, and soaring melody. Emotional crescendo. 95 BPM. New day, new possibilities. Motivational alarm.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Inspirational cinematic score. Building orchestral strings starting pianissimo, hopeful solo piano melody joined by French horns, emotional crescendo to fortissimo. 95 BPM. Sunrise over mountains. New chapter beginning.
 ```
 
 ### motivational_hustle
 ```
-Modern trap-inspired motivational beat with 808 bass, crisp hi-hats, and uplifting synth chords. Confident swagger. 140 BPM. Boss mode energy.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Modern trap-pop motivational beat. Deep 808 sub bass, crisp trap hi-hats, snappy clap snare, uplifting major-key synth chord progression, bright lead melody. 140 BPM. Confident CEO-walk energy. Boss mode activated.
 ```
 
 ---
@@ -113,17 +160,17 @@ Modern trap-inspired motivational beat with 808 bass, crisp hi-hats, and uplifti
 
 ### classical_string
 ```
-Elegant string quartet morning piece. Graceful violin melody with viola and cello harmony. Baroque-inspired. 80 BPM. Refined and sophisticated alarm.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Baroque-inspired string quartet. First violin playing graceful melodic line in G major, second violin providing countermelody, viola and cello in warm pizzicato accompaniment. 80 BPM. Elegant, refined, sophisticated. Chamber music warmth.
 ```
 
 ### classical_moonlight
 ```
-Romantic piano solo inspired by classical sonatas. Gentle arpeggios with emotional melody. 72 BPM. Beautiful and contemplative. Elegant morning alarm.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Romantic-era solo piano. Gentle broken-chord arpeggios in C-sharp minor, expressive rubato melody in right hand, sustain pedal warmth. 72 BPM. Contemplative beauty. Steinway grand piano tone, intimate recital hall reverb.
 ```
 
 ### classical_vivaldi
 ```
-Bright, lively Baroque-style piece with harpsichord and strings. Energetic yet refined. 100 BPM. Spring morning energy. Cheerful classical alarm.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Bright Baroque concerto style. Lively harpsichord continuo, energetic violin ensemble melody, driving cello bass line. 100 BPM. Spring morning energy, Vivaldi Four Seasons spirit. Cheerful, danceable, aristocratic.
 ```
 
 ---
@@ -132,17 +179,17 @@ Bright, lively Baroque-style piece with harpsichord and strings. Energetic yet r
 
 ### kpop_sparkle
 ```
-Catchy K-pop instrumental with bright synth hooks, punchy dance beat, and shimmering effects. Polished pop production. 125 BPM. Addictive melody. Fun wake-up energy.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Catchy K-pop dance-pop instrumental. Bright supersaw synth hook, tight 808 kick and snappy snare, shimmering high-frequency arpeggios, funky filtered bass. 125 BPM. SM/JYP-style polished production. Addictive 4-bar melody loop. Clean, bright, poppy.
 ```
 
 ### kpop_dreamy
 ```
-Dreamy K-pop ballad instrumental with soft R&B beat, lush synth pads, and twinkly keys. Sweet and romantic. 90 BPM. Gentle K-pop morning vibe.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Dreamy K-pop R&B ballad instrumental. Lush reverbed synth pads, soft trap-soul beat with gentle 808, twinkly celeste keys, warm electric piano chords. 90 BPM. Sweet, romantic morning. IU/Taeyeon ballad aesthetic. Intimate, delicate production.
 ```
 
 ### kpop_hype
 ```
-High-energy K-pop dance instrumental with EDM drop, powerful brass stabs, and driving four-on-the-floor beat. 130 BPM. Festival energy. Impossible to stay in bed.
+30-second morning alarm tone, seamless instrumental loop, no fade-out, strong attack from beat one. High-energy K-pop EDM instrumental. Massive future bass drop with detuned supersaw chords, powerful brass stab hits, four-on-the-floor kick, festival laser synth FX. 130 BPM. BLACKPINK energy. Maximum hype.
 ```
 
 ---
@@ -151,17 +198,17 @@ High-energy K-pop dance instrumental with EDM drop, powerful brass stabs, and dr
 
 ### jpop_sakura
 ```
-Bright J-pop instrumental with acoustic guitar, piano, and light electronic beat. Cheerful spring morning anime opening energy. 135 BPM. Optimistic and catchy.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Bright J-pop anime opening instrumental. Rhythmic acoustic guitar strumming, uplifting piano melody, light electronic beat with sidechained pads, tambourine shaker. 135 BPM. Cherry blossom optimism. Radwimps/YOASOBI-inspired energy. Cheerful, catchy.
 ```
 
 ### jpop_city
 ```
-City pop revival instrumental with funky bass, jazzy electric piano, and groovy drums. 1980s Tokyo night vibes. 110 BPM. Smooth and stylish.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. 1980s Japanese city pop revival instrumental. Slap bass groove, Fender Rhodes jazzy electric piano chords, chorus-effect clean guitar, tight disco hi-hat pattern. 110 BPM. Tatsuro Yamashita aesthetic. Smooth, groovy, stylish Tokyo night.
 ```
 
 ### jpop_kawaii
 ```
-Cute, playful J-pop instrumental with music box melody, bouncy synth bass, and cheerful chiptune accents. 120 BPM. Bright pastel energy. Happy morning alarm.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Cute Harajuku-pop instrumental. Twinkling music box melody, bouncy 8-bit chiptune bass, cheerful glockenspiel accents, light four-on-the-floor kick with clap. 120 BPM. Pastel candy colors in sound. Kawaii, playful, happy morning energy.
 ```
 
 ---
@@ -170,37 +217,134 @@ Cute, playful J-pop instrumental with music box melody, bouncy synth bass, and c
 
 ### lofi_morning
 ```
-Lo-fi hip hop instrumental with warm vinyl crackle, mellow jazz piano, and relaxed boom-bap drums. 85 BPM. Cozy study cafe vibe. Chill wake-up alarm.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Lo-fi hip hop. Warm vinyl crackle texture, mellow jazz piano chords with gentle swing, dusty boom-bap drum loop with soft kick and brushed snare, Rhodes bass. 85 BPM. Sunday morning coffee shop vibe. Tape-saturated warmth, analog feel.
 ```
 
 ### lofi_rainy
 ```
-Rainy day lo-fi beat with soft guitar, gentle rain ambience, and warm analog bass. Nostalgic and comforting. 80 BPM. Laid-back morning alarm.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Rainy day lo-fi beat. Nylon guitar fingerpicking with chorus effect, subtle rain ambience layer, warm tube-saturated analog bass, lazy half-time drum pattern. 80 BPM. Nostalgic, comforting, like staying in bed but gently waking up.
 ```
 
 ### lofi_sunset
 ```
-Lo-fi chillhop with dreamy Rhodes piano, smooth saxophone, and tape-saturated drums. Golden hour warmth. 82 BPM. Mellow and soothing.
+30-second morning alarm tone, seamless instrumental loop, no fade-out. Lo-fi chillhop jazz. Dreamy Wurlitzer electric piano melody, smooth tenor saxophone ad-lib, tape-compressed SP-404 style drums, vinyl hiss. 82 BPM. Golden hour warmth. Nujabes-inspired. Soulful, mellow, beautiful.
 ```
 
 ---
 
 ## Category 10: Motivational Voice（モチベ音声）
-> Instrumental: OFF — ボーカルありで生成
+> **Instrumental: OFF** — ボーカルありで生成
+> **Lyrics欄** に下記の「」内セリフをそのまま入力する
+> **Style prompt** に音楽の指示を入力する
 
-### voice_morning_en
+### voice_gentle_en
+**Style prompt:**
 ```
-Spoken word motivation over soft ambient background. Male voice: "Rise and shine. Today is your day. Make it count." Calm, confident, warm tone. Gentle background piano. 70 BPM.
+30-second morning alarm tone with spoken word, no fade-out. Calm deep male voice speaking over soft ambient piano pads, gentle reverb. Warm, reassuring tone like a wise mentor. 65 BPM. Intimate, close-mic voice recording feel.
+```
+**Lyrics:**
+```
+Good morning. Take a deep breath.
+This day is yours.
+You don't have to be perfect — you just have to show up.
+And you already did.
+Now go make something beautiful.
 ```
 
-### voice_morning_ja
+### voice_gentle_ja
+**Style prompt:**
 ```
-Japanese spoken word motivation over gentle ambient music. Male voice saying encouraging morning words. Warm, calm, supportive tone. Soft piano and strings background. 70 BPM.
+30-second morning alarm tone with spoken word, no fade-out. Calm warm Japanese male voice over gentle nylon guitar arpeggios and soft string pad. Reassuring, supportive coach tone. 65 BPM. Natural Japanese speech rhythm.
+```
+**Lyrics:**
+```
+おはよう。今日も目が覚めた。
+それだけで、もう一歩前に進んでる。
+焦らなくていい。
+自分のペースで、最高の一日にしよう。
 ```
 
-### voice_energy_en
+### voice_fire_en
+**Style prompt:**
 ```
-Energetic motivational speech over upbeat instrumental. "Let's go! You've got this! Time to make things happen!" Powerful, enthusiastic delivery. Driving drums and bass. 120 BPM.
+30-second morning alarm tone with motivational speech, no fade-out, building intensity. Powerful passionate male voice over epic cinematic instrumental, building timpani and brass swells. Commanding, intense. 110 BPM.
+```
+**Lyrics:**
+```
+Wake up.
+While you're lying there, someone out there is putting in the work.
+This is your moment. Not tomorrow. Not next week.
+Right now.
+Get up and make it happen.
+```
+
+### voice_fire_ja
+**Style prompt:**
+```
+30-second morning alarm tone with motivational speech, no fade-out, building intensity. Strong passionate Japanese male voice over driving beat with taiko drums, powerful bass, dramatic strings. Direct coach-style. 110 BPM.
+```
+**Lyrics:**
+```
+起きろ。
+昨日の自分を超えるのは、今日の自分だけだ。
+言い訳してる時間はない。
+さあ立ち上がれ。
+お前の番だ。
+```
+
+### voice_calm_en
+**Style prompt:**
+```
+30-second morning alarm tone with mindfulness spoken word, no fade-out. Soothing warm female voice over ambient soundscape with singing bowls, gentle nature sounds, airy pads. Meditative, grounding. 60 BPM.
+```
+**Lyrics:**
+```
+Breathe in. Breathe out.
+A new day has begun, full of possibilities.
+You are enough, exactly as you are.
+Now rise gently,
+and carry that peace with you.
+```
+
+### voice_calm_ja
+**Style prompt:**
+```
+30-second morning alarm tone with mindfulness spoken word, no fade-out. Gentle soothing Japanese female voice over soft piano and ambient wind pads. Morning yoga instructor tone. Peaceful, meditative. 60 BPM.
+```
+**Lyrics:**
+```
+深呼吸して。
+今日という日は、まだ何も書かれていない真っ白なページ。
+どんな一日にするかは、あなた次第。
+さあ、ゆっくり始めよう。
+```
+
+### voice_hype_en
+**Style prompt:**
+```
+30-second morning alarm tone with high-energy motivational speech, no fade-out, strong attack from beat one. Energetic hyped male voice over modern trap beat with heavy 808 bass, crisp hi-hats, stadium claps. Maximum energy. 130 BPM.
+```
+**Lyrics:**
+```
+Let's GO!
+Champions don't hit snooze.
+You've got dreams to chase and goals to crush.
+Every single morning is a chance to level up.
+So get out of that bed and OWN this day!
+```
+
+### voice_gratitude_ja
+**Style prompt:**
+```
+30-second morning alarm tone with spoken word, no fade-out. Kind mature Japanese male voice over gentle lo-fi piano with vinyl crackle, warm acoustic guitar. Philosophical, grateful tone. 75 BPM. Like a letter from a caring father.
+```
+**Lyrics:**
+```
+おはよう。
+目が覚めたこと、当たり前じゃない。
+今日会える人、食べられるごはん、全部がギフトだ。
+感謝して、楽しんで、
+今日も生きよう。
 ```
 
 ---

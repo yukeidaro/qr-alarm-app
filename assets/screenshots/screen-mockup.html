@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --accent: #E8A838;
+    --accent-text: #4A3200;
+    --accent-warm: #F2C56B;
+    --accent-subtle: #C49030;
+    --bg-primary: #F5F0EB;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #EDE8E3;
+    --bg-warm-card: #FFF8EE;
+    --text-primary: #1A1A1A;
+    --text-secondary: #4A4A4A;
+    --text-muted: #9B9590;
+    --warm-glow: rgba(232, 168, 56, 0.06);
+    --warm-glow-strong: rgba(232, 168, 56, 0.15);
+    --overlay-accent10: rgba(232, 168, 56, 0.10);
+    --overlay-accent12: rgba(232, 168, 56, 0.12);
+  }
+  
+  body {
+    width: 1080px;
+    height: 2340px;
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== FEATURES SCREEN ===== */
+  .screen-features {
+    width: 100%; height: 100%;
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+  }
+  .features-topbar {
+    display: flex;
+    align-items: center;
+    padding: 120px 80px 40px;
+  }
+  .features-back {
+    font-size: 56px;
+    color: var(--accent);
+    font-weight: 300;
+    line-height: 1;
+    margin-right: 24px;
+  }
+  .features-title {
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+    flex: 1;
+  }
+  .features-spacer { width: 56px; }
+  .features-hero {
+    text-align: center;
+    padding: 60px 80px 80px;
+  }
+  .features-icon {
+    margin: 0 auto 40px;
+    width: 120px; height: 120px;
+    background: var(--overlay-accent10);
+    border-radius: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .features-hero-title {
+    font-size: 52px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+  }
+  .features-hero-desc {
+    font-size: 28px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .features-list {
+    padding: 0 80px;
+  }
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    background: var(--bg-secondary);
+    border-radius: 28px;
+    padding: 36px 40px;
+    margin-bottom: 16px;
+  }
+  .feature-check {
+    width: 56px; height: 56px;
+    min-width: 56px;
+    background: rgba(76, 175, 80, 0.12);
+    color: #4CAF50;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-right: 28px;
+    margin-top: 4px;
+  }
+  .feature-text { flex: 1; }
+  .feature-label {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .feature-desc {
+    font-size: 24px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .features-bottom-card {
+    margin: 40px 80px 0;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-subtle) 100%);
+    border-radius: 28px;
+    padding: 48px 44px;
+    text-align: center;
+  }
+  .features-bottom-title {
+    font-size: 34px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: 12px;
+  }
+  .features-bottom-desc {
+    font-size: 24px;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.6;
+  }
+
+  /* ===== HOME SCREEN ===== */
+  .screen-home {
+    width: 100%; height: 100%;
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+    padding: 0 80px;
+  }
+  .home-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 120px;
+    padding-bottom: 8px;
+  }
+  .home-brand {
+    font-size: 34px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 2px;
+  }
+  .home-qr-btn {
+    width: 96px; height: 96px;
+    background: var(--overlay-accent10);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .home-qr-icon {
+    font-size: 44px;
+    color: var(--accent-subtle);
+    font-weight: 700;
+    font-family: monospace;
+    line-height: 1;
+  }
+  .home-hero {
+    text-align: center;
+    padding-top: 60px;
+    padding-bottom: 80px;
+  }
+  .home-date {
+    font-size: 24px;
+    color: var(--accent-subtle);
+    letter-spacing: 3px;
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+  .home-time {
+    font-size: 180px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 4px;
+    line-height: 1;
+  }
+  .home-greeting {
+    font-size: 30px;
+    color: var(--text-muted);
+    margin-top: 24px;
+    font-weight: 400;
+  }
+  
+  /* Alarm Cards */
+  .alarm-card {
+    background: var(--bg-secondary);
+    border-radius: 32px;
+    padding: 40px 40px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .alarm-accent-bar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: var(--accent);
+  }
+  .alarm-content { flex: 1; padding-left: 16px; }
+  .alarm-time {
+    font-size: 112px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 2px;
+    line-height: 1.1;
+  }
+  .alarm-days {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .day-chip {
+    padding: 4px 8px;
+    border-radius: 24px;
+    font-size: 20px;
+    color: var(--text-muted);
+    font-weight: 400;
+    opacity: 0.3;
+  }
+  .day-chip.active {
+    background: var(--overlay-accent12);
+    color: var(--accent);
+    font-weight: 600;
+    opacity: 1;
+  }
+  
+  /* Toggle switch */
+  .toggle {
+    width: 104px; height: 64px;
+    background: var(--accent);
+    border-radius: 32px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .toggle-thumb {
+    width: 56px; height: 56px;
+    background: white;
+    border-radius: 28px;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  /* FAB */
+  .fab {
+    position: absolute;
+    bottom: 80px;
+    right: 80px;
+    width: 112px; height: 112px;
+    background: var(--accent);
+    border-radius: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(232,168,56,0.3);
+  }
+  .fab-icon {
+    font-size: 56px;
+    color: var(--accent-text);
+    font-weight: 300;
+    line-height: 1;
+  }
+  
+  /* ===== RINGING SCREEN ===== */
+  .screen-ringing {
+    width: 100%; height: 100%;
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .ringing-glow {
+    position: absolute;
+    width: 600px; height: 400px;
+    border-radius: 300px;
+    background: var(--warm-glow-strong);
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .ringing-time {
+    font-size: 256px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 8px;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+  }
+  .ringing-greeting {
+    font-size: 36px;
+    color: var(--text-muted);
+    margin-top: 40px;
+    font-weight: 400;
+    position: relative;
+    z-index: 1;
+  }
+  .ringing-actions {
+    position: absolute;
+    bottom: 160px;
+    left: 80px; right: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .ringing-main-btn {
+    width: 100%;
+    background: var(--accent);
+    border-radius: 9999px;
+    padding: 40px 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .ringing-main-btn-text {
+    font-size: 34px;
+    color: var(--accent-text);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .ringing-snooze-btn {
+    width: 100%;
+    background: var(--bg-secondary);
+    border-radius: 9999px;
+    padding: 32px 0;
+    text-align: center;
+  }
+  .ringing-snooze-text {
+    font-size: 28px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  
+  /* ===== SCAN SCREEN ===== */
+  .screen-scan {
+    width: 100%; height: 100%;
+    background: #1A1A1A;
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-camera-bg {
+    position: absolute;
+    inset: 0;
+    background: url('scan-bg.jpg') center center / cover no-repeat;
+  }
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .scan-frame {
+    width: 640px; height: 640px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .scan-corner {
+    position: absolute;
+    width: 72px; height: 72px;
+    border-color: var(--accent);
+  }
+  .scan-corner.tl { top: -2px; left: -2px; border-top: 6px solid; border-left: 6px solid; border-top-left-radius: 32px; }
+  .scan-corner.tr { top: -2px; right: -2px; border-top: 6px solid; border-right: 6px solid; border-top-right-radius: 32px; }
+  .scan-corner.bl { bottom: -2px; left: -2px; border-bottom: 6px solid; border-left: 6px solid; border-bottom-left-radius: 32px; }
+  .scan-corner.br { bottom: -2px; right: -2px; border-bottom: 6px solid; border-right: 6px solid; border-bottom-right-radius: 32px; }
+  .scan-dot {
+    width: 16px; height: 16px;
+    border-radius: 8px;
+    background: var(--accent);
+    opacity: 0.3;
+  }
+  .scan-label {
+    font-size: 22px;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 6px;
+    margin-top: 48px;
+    opacity: 0.6;
+  }
+  .scan-status-bar {
+    position: absolute;
+    bottom: 160px;
+    left: 80px; right: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .scan-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-secondary);
+    padding: 24px 48px;
+    border-radius: 9999px;
+  }
+  .scan-status-dot {
+    width: 12px; height: 12px;
+    border-radius: 6px;
+    background: var(--text-muted);
+  }
+  .scan-status-text {
+    font-size: 30px;
+    color: var(--text-primary);
+    font-weight: 400;
+  }
+  .scan-progress-track {
+    width: 100%; height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.15);
+    overflow: hidden;
+  }
+  .scan-progress-fill {
+    width: 25%; height: 6px;
+    border-radius: 3px;
+    background: var(--accent);
+  }
+  .scan-countdown {
+    font-size: 28px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  /* Torch button */
+  .scan-torch {
+    position: absolute;
+    top: 120px; left: 80px;
+    width: 88px; height: 88px;
+    border-radius: 9999px;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .scan-torch-icon { font-size: 40px; }
+  
+  /* ===== SOUNDS SCREEN ===== */
+  .screen-sounds {
+    width: 100%; height: 100%;
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+  }
+  .sounds-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 120px 80px 32px;
+  }
+  .sounds-back {
+    font-size: 30px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .sounds-title {
+    font-size: 34px;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .sounds-spacer { width: 112px; }
+  
+  /* Category chips */
+  .sounds-chips {
+    display: flex;
+    gap: 16px;
+    padding: 0 80px 32px;
+    overflow-x: hidden;
+  }
+  .sounds-chip {
+    padding: 16px 32px;
+    border-radius: 9999px;
+    background: var(--bg-tertiary);
+    font-size: 28px;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sounds-chip.active {
+    background: var(--accent);
+    color: var(--accent-text);
+  }
+  
+  /* Section header */
+  .sounds-section-header {
+    padding: 40px 80px 16px;
+    font-size: 24px;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  
+  /* Sound rows */
+  .sounds-list {
+    padding: 0 80px;
+    flex: 1;
+    overflow: hidden;
+  }
+  .sound-row {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    padding: 32px;
+    border-radius: 32px;
+    margin-bottom: 16px;
+  }
+  .sound-row.active {
+    border: 2px solid var(--accent);
+  }
+  .sound-radio {
+    width: 44px; height: 44px;
+    border-radius: 22px;
+    border: 4px solid var(--bg-tertiary);
+    margin-right: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .sound-radio.active {
+    border-color: var(--accent);
+  }
+  .sound-radio-dot {
+    width: 24px; height: 24px;
+    border-radius: 12px;
+    background: var(--accent);
+  }
+  .sound-label {
+    font-size: 34px;
+    color: var(--text-muted);
+    font-weight: 400;
+    flex: 1;
+  }
+  .sound-label.active {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .sound-playing {
+    font-size: 28px;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: -2px;
+    margin-left: 16px;
+  }
+  
+  /* Footer */
+  .sounds-footer {
+    padding: 32px 80px 80px;
+    background: var(--bg-primary);
+  }
+  .sounds-done-btn {
+    background: var(--accent);
+    padding: 32px;
+    border-radius: 9999px;
+    text-align: center;
+    font-size: 34px;
+    color: var(--accent-text);
+    font-weight: 600;
+  }
+  
+  /* Import button */
+  .sounds-import {
+    position: absolute;
+    bottom: 200px; right: 80px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-secondary);
+    padding: 24px 32px;
+    border-radius: 9999px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .sounds-import-icon {
+    font-size: 40px;
+    color: var(--accent);
+    font-weight: 400;
+    line-height: 1;
+  }
+  .sounds-import-text {
+    font-size: 28px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* Status bar (iOS-like) */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 56px 0;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+  }
+  .status-time {
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 24px;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .status-bar.light .status-time,
+  .status-bar.light .status-icons {
+    color: white;
+  }
+  
+  /* Dynamic island / notch */
+  .dynamic-island {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 248px; height: 68px;
+    background: #000;
+    border-radius: 40px;
+    z-index: 20;
+  }
+  .screen-scan .dynamic-island { background: #000; }
+</style>
+</head>
+<body>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const screen = params.get('screen') || 'home';
+  
+  const screens = {
+    home: `
+      <div class="dynamic-island"></div>
+      <div class="status-bar">
+        <div class="status-time">8:50</div>
+        <div class="status-icons">
+          <span>&#9679;&#9679;&#9679;&#9679;</span>
+          <span style="font-size:20px">&#9632;</span>
+        </div>
+      </div>
+      <div class="screen-home">
+        <div class="home-topbar">
+          <div class="home-brand">ScanAlarm</div>
+          <div class="home-qr-btn">
+            <div class="home-qr-icon">⣿</div>
+          </div>
+        </div>
+        <div class="home-hero">
+          <div class="home-date">2026年4月5日 土曜日</div>
+          <div class="home-time">07:00</div>
+          <div class="home-greeting">おはようございます</div>
+        </div>
+        <div class="alarm-card">
+          <div class="alarm-accent-bar"></div>
+          <div class="alarm-content">
+            <div class="alarm-time">06:30</div>
+            <div class="alarm-days">
+              <span class="day-chip active">月</span>
+              <span class="day-chip active">火</span>
+              <span class="day-chip active">水</span>
+              <span class="day-chip active">木</span>
+              <span class="day-chip active">金</span>
+              <span class="day-chip">土</span>
+              <span class="day-chip">日</span>
+            </div>
+          </div>
+          <div class="toggle"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="alarm-card">
+          <div class="alarm-accent-bar"></div>
+          <div class="alarm-content">
+            <div class="alarm-time">08:00</div>
+            <div class="alarm-days">
+              <span class="day-chip">月</span>
+              <span class="day-chip">火</span>
+              <span class="day-chip">水</span>
+              <span class="day-chip">木</span>
+              <span class="day-chip">金</span>
+              <span class="day-chip active">土</span>
+              <span class="day-chip active">日</span>
+            </div>
+          </div>
+          <div class="toggle"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="fab"><div class="fab-icon">+</div></div>
+      </div>
+    `,
+    ringing: `
+      <div class="dynamic-island"></div>
+      <div class="status-bar">
+        <div class="status-time">6:30</div>
+        <div class="status-icons">
+          <span>&#9679;&#9679;&#9679;&#9679;</span>
+          <span style="font-size:20px">&#9632;</span>
+        </div>
+      </div>
+      <div class="screen-ringing">
+        <div class="ringing-glow"></div>
+        <div class="ringing-time">06:30</div>
+        <div class="ringing-greeting">おはようございます</div>
+        <div class="ringing-actions">
+          <div class="ringing-main-btn">
+            <div class="ringing-main-btn-text">
+              <span style="font-family:monospace;font-size:32px;opacity:0.7">⣿</span>
+              スキャンして解除
+            </div>
+          </div>
+          <div class="ringing-snooze-btn">
+            <div class="ringing-snooze-text">スヌーズ (残り3回)</div>
+          </div>
+        </div>
+      </div>
+    `,
+    scan: `
+      <div class="dynamic-island"></div>
+      <div class="status-bar light">
+        <div class="status-time">6:30</div>
+        <div class="status-icons">
+          <span>&#9679;&#9679;&#9679;&#9679;</span>
+          <span style="font-size:20px">&#9632;</span>
+        </div>
+      </div>
+      <div class="screen-scan">
+        <div class="scan-camera-bg"></div>
+        <div class="scan-overlay">
+          <div class="scan-frame">
+            <div class="scan-corner tl"></div>
+            <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div>
+            <div class="scan-corner br"></div>
+            <div class="scan-dot"></div>
+          </div>
+          <div class="scan-label">SCAN</div>
+        </div>
+        <div class="scan-status-bar">
+          <div class="scan-status-pill">
+            <div class="scan-status-dot"></div>
+            <div class="scan-status-text">QRコードをスキャン</div>
+          </div>
+          <div class="scan-progress-track">
+            <div class="scan-progress-fill"></div>
+          </div>
+          <div class="scan-countdown">残り 15秒</div>
+        </div>
+        <div class="scan-torch">
+          <span class="scan-torch-icon">🔦</span>
+        </div>
+      </div>
+    `,
+    sounds: `
+      <div class="dynamic-island"></div>
+      <div class="status-bar">
+        <div class="status-time">7:15</div>
+        <div class="status-icons">
+          <span>&#9679;&#9679;&#9679;&#9679;</span>
+          <span style="font-size:20px">&#9632;</span>
+        </div>
+      </div>
+      <div class="screen-sounds" style="position:relative">
+        <div class="sounds-header">
+          <div class="sounds-back">戻る</div>
+          <div class="sounds-title">サウンド</div>
+          <div class="sounds-spacer"></div>
+        </div>
+        <div class="sounds-chips">
+          <div class="sounds-chip active">すべて</div>
+          <div class="sounds-chip">穏やか</div>
+          <div class="sounds-chip">自然</div>
+          <div class="sounds-chip">メロディ</div>
+          <div class="sounds-chip">強力</div>
+        </div>
+        <div class="sounds-section-header">穏やか</div>
+        <div class="sounds-list">
+          <div class="sound-row active">
+            <div class="sound-radio active"><div class="sound-radio-dot"></div></div>
+            <div class="sound-label active">やさしい朝</div>
+            <div class="sound-playing">|||</div>
+          </div>
+          <div class="sound-row">
+            <div class="sound-radio"></div>
+            <div class="sound-label">朝のそよ風</div>
+          </div>
+          <div class="sound-row">
+            <div class="sound-radio"></div>
+            <div class="sound-label">やわらかベル</div>
+          </div>
+          <div class="sound-row">
+            <div class="sound-radio"></div>
+            <div class="sound-label">おだやかチャイム</div>
+          </div>
+          <div class="sounds-section-header" style="padding:40px 0 16px">自然</div>
+          <div class="sound-row">
+            <div class="sound-radio"></div>
+            <div class="sound-label">小鳥のさえずり</div>
+          </div>
+          <div class="sound-row">
+            <div class="sound-radio"></div>
+            <div class="sound-label">せせらぎ</div>
+          </div>
+          <div class="sound-row">
+            <div class="sound-radio"></div>
+            <div class="sound-label">波の音</div>
+          </div>
+          <div class="sound-row">
+            <div class="sound-radio"></div>
+            <div class="sound-label">雨音</div>
+          </div>
+        </div>
+        <div class="sounds-footer">
+          <div class="sounds-done-btn">完了</div>
+        </div>
+        <div class="sounds-import">
+          <span class="sounds-import-icon">+</span>
+          <span class="sounds-import-text">音を追加</span>
+        </div>
+      </div>
+    `
+  };
+  
+  screens.features = `
+      <div class="screen-features">
+        <div class="features-topbar">
+          <div class="features-back">&#8249;</div>
+          <div class="features-title">ScanAlarm</div>
+          <div class="features-spacer"></div>
+        </div>
+        <div class="features-hero">
+          <div class="features-icon">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+              <rect width="80" height="80" rx="20" fill="#E8A838"/>
+              <rect x="20" y="20" width="16" height="16" rx="2" fill="white"/>
+              <rect x="44" y="20" width="16" height="16" rx="2" fill="white"/>
+              <rect x="20" y="44" width="16" height="16" rx="2" fill="white"/>
+              <rect x="44" y="44" width="8" height="8" rx="1" fill="white"/>
+              <rect x="52" y="52" width="8" height="8" rx="1" fill="white"/>
+              <rect x="44" y="52" width="8" height="8" rx="1" fill="white" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="features-hero-title">すべて無料で使える</div>
+          <div class="features-hero-desc">サブスクリプション不要<br>隠れた課金は一切ありません</div>
+        </div>
+        <div class="features-list">
+          <div class="feature-item">
+            <div class="feature-check">&#10003;</div>
+            <div class="feature-text">
+              <div class="feature-label">完全無料</div>
+              <div class="feature-desc">全機能を無料で利用可能</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-check">&#10003;</div>
+            <div class="feature-text">
+              <div class="feature-label">サブスクリプション不要</div>
+              <div class="feature-desc">月額・年額課金なし</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-check">&#10003;</div>
+            <div class="feature-text">
+              <div class="feature-label">広告を最小限に</div>
+              <div class="feature-desc">操作を邪魔しないデザイン</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-check">&#10003;</div>
+            <div class="feature-text">
+              <div class="feature-label">48種のアラーム音</div>
+              <div class="feature-desc">追加課金なしですべて利用可能</div>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-check">&#10003;</div>
+            <div class="feature-text">
+              <div class="feature-label">自分の音楽をアップロード</div>
+              <div class="feature-desc">好きな音でアラームを鳴らせる</div>
+            </div>
+          </div>
+        </div>
+        <div class="features-bottom-card">
+          <div class="features-bottom-title">安心してお使いください</div>
+          <div class="features-bottom-desc">ScanAlarmは広告を最小限に抑え、<br>快適な目覚めをサポートします。</div>
+        </div>
+      </div>
+    `;
+
+  document.body.innerHTML = screens[screen] || screens.home;
+</script>
+</body>
+</html>

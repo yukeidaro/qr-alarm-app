@@ -3,7 +3,7 @@
  * スヌーズ後にここに遷移し、QRスキャンでのみ解除可能。
  * カウントダウンが0になると通知で再びringing画面に遷移する。
  */
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, BackHandler, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -12,12 +12,11 @@ import {
   getRegisteredQR,
   getSnoozeCount,
 } from '../services/storageService';
+import { SNOOZE_MINUTES } from '../services/alarmService';
 import { AD_UNIT_IDS } from '../services/adService';
 import AdBanner from '../components/AdBanner';
-import {
-  BG_PRIMARY, BG_SECONDARY, ACCENT_PRIMARY, ACCENT_PRIMARY_TEXT,
-  TEXT_PRIMARY, TEXT_MUTED, WARM_GLOW, WARM_GLOW_STRONG, ACCENT_SUBTLE,
-} from '../constants/colors';
+import { ThemeColors } from '../constants/colors';
+import { useTheme } from '../theme';
 import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
 import { SPACING, SCREEN_PADDING, RADIUS, ACTIVE_OPACITY } from '../constants/spacing';
 import { t, formatCountdownLabel } from '../i18n';
@@ -26,6 +25,8 @@ export default function SnoozeScreen() {
   const router = useRouter();
   const { alarmId } = useLocalSearchParams<{ alarmId?: string }>();
   const effectiveId = alarmId || 'default';
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [snoozeCount, setSnoozeCount] = useState(0);
@@ -86,7 +87,7 @@ export default function SnoozeScreen() {
       pulseScale.setValue(1);
       urgentGlow.setValue(0);
     }
-  }, [remainingSeconds !== null && remainingSeconds <= 0]);
+  }, [remainingSeconds]);
 
   // Load initial data
   useEffect(() => {
@@ -99,20 +100,23 @@ export default function SnoozeScreen() {
     load();
   }, [effectiveId]);
 
-  // Countdown timer
+  // Countdown timer — read target time once, then count down in memory
+  const targetTimeRef = useRef<number | null>(null);
+
   useEffect(() => {
-    const updateRemaining = async () => {
-      const targetTime = await getSnoozeTime(effectiveId);
-      if (targetTime) {
-        const diff = Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
+    // Load target time once
+    getSnoozeTime(effectiveId).then(t => {
+      targetTimeRef.current = t;
+    });
+
+    const interval = setInterval(() => {
+      if (targetTimeRef.current) {
+        const diff = Math.max(0, Math.ceil((targetTimeRef.current - Date.now()) / 1000));
         setRemainingSeconds(diff);
       } else {
         setRemainingSeconds(0);
       }
-    };
-
-    updateRemaining();
-    const interval = setInterval(updateRemaining, 1000);
+    }, 1000);
     return () => clearInterval(interval);
   }, [effectiveId]);
 
@@ -129,7 +133,7 @@ export default function SnoozeScreen() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const totalSnooze = 5 * 60; // 5 minutes in seconds
+  const totalSnooze = SNOOZE_MINUTES * 60;
   const progress = remainingSeconds !== null ? Math.max(0, 1 - remainingSeconds / totalSnooze) : 0;
 
   return (
@@ -193,10 +197,10 @@ export default function SnoozeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG_PRIMARY,
+    backgroundColor: c.bgPrimary,
   },
   topAd: {
     position: 'absolute',
@@ -216,12 +220,12 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: WARM_GLOW_STRONG,
+    backgroundColor: c.warmGlowStrong,
   },
   countBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.s,
     borderRadius: RADIUS.full,
@@ -232,35 +236,35 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
     opacity: 0.6,
   },
   countBadgeText: {
     fontSize: FONT_SIZE.labelSmall,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     fontFamily: FONT_FAMILY.regular,
   },
   countdown: {
     fontSize: 88,
     fontFamily: FONT_FAMILY.bold,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     letterSpacing: 4,
   },
   countdownUrgent: {
     fontSize: 88,
     fontFamily: FONT_FAMILY.bold,
-    color: ACCENT_PRIMARY,
+    color: c.accent,
     letterSpacing: 4,
   },
   label: {
     fontSize: FONT_SIZE.body,
-    color: ACCENT_SUBTLE,
+    color: c.accentSubtle,
     fontFamily: FONT_FAMILY.regular,
     marginTop: SPACING.base,
   },
   labelUrgent: {
     fontSize: FONT_SIZE.body,
-    color: ACCENT_PRIMARY,
+    color: c.accent,
     fontFamily: FONT_FAMILY.semiBold,
     marginTop: SPACING.base,
   },
@@ -268,14 +272,14 @@ const styles = StyleSheet.create({
     width: 120,
     height: 2,
     borderRadius: 1,
-    backgroundColor: BG_SECONDARY,
+    backgroundColor: c.bgSecondary,
     marginTop: SPACING.xxl,
     overflow: 'hidden',
   },
   progressFill: {
     height: 2,
     borderRadius: 1,
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
   },
   actions: {
     position: 'absolute',
@@ -288,18 +292,18 @@ const styles = StyleSheet.create({
   scanButton: {
     width: '100%',
     borderRadius: RADIUS.full,
-    backgroundColor: ACCENT_PRIMARY,
+    backgroundColor: c.accent,
     paddingVertical: SPACING.xl,
     alignItems: 'center',
   },
   scanButtonText: {
     fontSize: FONT_SIZE.body,
-    color: ACCENT_PRIMARY_TEXT,
+    color: c.accentText,
     fontFamily: FONT_FAMILY.semiBold,
   },
   hint: {
     fontSize: FONT_SIZE.labelSmall,
-    color: TEXT_MUTED,
+    color: c.textMuted,
     fontFamily: FONT_FAMILY.regular,
     textAlign: 'center',
     lineHeight: 18,

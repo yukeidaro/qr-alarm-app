@@ -3,8 +3,8 @@
  * Primary / Secondary / Danger / Ghost の4バリアント
  */
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, type ViewStyle, type TextStyle } from 'react-native';
-import { ACCENT_PRIMARY, ACCENT_PRIMARY_TEXT, BG_TERTIARY, TEXT_PRIMARY, TEXT_MUTED, ERROR_BG, TEXT_CONTRAST } from '../constants/colors';
+import { TouchableOpacity, Text, StyleSheet, Platform, type ViewStyle, type TextStyle } from 'react-native';
+import { useTheme } from '../theme';
 import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
 import { RADIUS, SPACING, ACTIVE_OPACITY } from '../constants/spacing';
 
@@ -20,13 +20,6 @@ interface ButtonProps {
   textStyle?: TextStyle;
 }
 
-const variantStyles: Record<ButtonVariant, { bg: string; text: string }> = {
-  primary: { bg: ACCENT_PRIMARY, text: ACCENT_PRIMARY_TEXT },
-  secondary: { bg: BG_TERTIARY, text: TEXT_PRIMARY },
-  danger: { bg: ERROR_BG, text: TEXT_CONTRAST },
-  ghost: { bg: 'transparent', text: TEXT_MUTED },
-};
-
 export default function Button({
   title,
   onPress,
@@ -36,13 +29,43 @@ export default function Button({
   style,
   textStyle,
 }: ButtonProps) {
+  const { colors, glass, isDark } = useTheme();
+
+  const variantStyles: Record<ButtonVariant, { bg: string; text: string }> = {
+    primary: { bg: colors.accent, text: colors.accentText },
+    secondary: {
+      bg: Platform.OS === 'ios' ? glass.surface2 : colors.bgTertiary,
+      text: colors.textPrimary,
+    },
+    danger: { bg: colors.errorBg, text: colors.textContrast },
+    ghost: {
+      bg: 'transparent',
+      text: colors.textMuted,
+    },
+  };
+
   const v = variantStyles[variant];
+
+  const glassAccent: ViewStyle = variant === 'primary' ? {
+    shadowColor: glass.shadowAccent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 3,
+  } : {};
+
+  const glassBorder: ViewStyle =
+    variant === 'secondary' || variant === 'ghost'
+      ? { borderWidth: 0.5, borderColor: glass.border }
+      : {};
 
   return (
     <TouchableOpacity
       style={[
         styles.base,
         { backgroundColor: v.bg },
+        glassAccent,
+        glassBorder,
         fullWidth && styles.fullWidth,
         disabled && styles.disabled,
         style,
