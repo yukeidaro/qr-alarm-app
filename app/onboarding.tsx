@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ScrollView,
   Keyboard,
   TouchableWithoutFeedback,
+  AppState,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -41,6 +42,20 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     animateIn();
+    // Check current notification permission status on mount
+    Notifications.getPermissionsAsync().then(({ status }) => {
+      if (status === 'granted') setNotifGranted(true);
+    });
+
+    // Re-check when user returns from Settings app
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        Notifications.getPermissionsAsync().then(({ status }) => {
+          if (status === 'granted') setNotifGranted(true);
+        });
+      }
+    });
+    return () => subscription.remove();
   }, []);
 
   const animateIn = () => {
@@ -68,12 +83,33 @@ export default function OnboardingScreen() {
   };
 
   const handleRequestNotifications = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    const granted = status === 'granted';
-    setNotifGranted(granted);
-    Haptics.notificationAsync(
-      granted ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
-    );
+    // Check current status first
+    const { status: currentStatus } = await Notifications.getPermissionsAsync();
+
+    if (currentStatus === 'granted') {
+      setNotifGranted(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      return;
+    }
+
+    if (currentStatus === 'undetermined') {
+      // First time — show system permission dialog
+      const { status } = await Notifications.requestPermissionsAsync();
+      const granted = status === 'granted';
+      setNotifGranted(granted);
+      Haptics.notificationAsync(
+        granted ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
+      );
+      return;
+    }
+
+    // Status is 'denied' — system dialog won't show again, open Settings
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings();
+    }
   };
 
   const handleOpenFocusSettings = async () => {
