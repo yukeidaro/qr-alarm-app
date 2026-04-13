@@ -77,21 +77,13 @@ export default function OnboardingScreen() {
   };
 
   const handleOpenFocusSettings = async () => {
+    // App-Prefs:FOCUS はプライベートAPIでApp Storeリジェクトされるため使用禁止
+    // ScanAlarmのアプリ設定を開き、テキストで手順案内する
     if (Platform.OS === 'ios') {
-      const focusUrl = 'App-Prefs:FOCUS';
-      const canOpen = await Linking.canOpenURL(focusUrl).catch(() => false);
-      if (canOpen) {
-        await Linking.openURL(focusUrl);
-      } else {
-        await Linking.openURL('App-Prefs:').catch(() => Linking.openSettings());
-      }
+      Linking.openURL('app-settings:');
     } else {
       Linking.openSettings();
     }
-  };
-
-  const handleOpenNotificationSettings = () => {
-    Linking.openURL('app-settings:').catch(() => Linking.openSettings());
   };
 
   const handleFinish = async () => {
@@ -211,16 +203,10 @@ export default function OnboardingScreen() {
         </View>
       </View>
 
-      {/* Open Focus Settings button */}
+      {/* Open ScanAlarm Settings button */}
       <TouchableOpacity style={styles.focusSettingsButton} onPress={handleOpenFocusSettings} activeOpacity={ACTIVE_OPACITY.default}>
-        <Ionicons name="moon-outline" size={18} color={colors.accentText} />
+        <Ionicons name="settings-outline" size={18} color={colors.accentText} />
         <Text style={styles.focusSettingsButtonText}>{t.onboardingFlow.openFocusSettings}</Text>
-      </TouchableOpacity>
-
-      {/* Open ScanAlarm Notification Settings button */}
-      <TouchableOpacity style={styles.focusSecondaryButton} onPress={handleOpenNotificationSettings} activeOpacity={ACTIVE_OPACITY.default}>
-        <Ionicons name="notifications-outline" size={18} color={colors.textSecondary} />
-        <Text style={styles.focusSecondaryButtonText}>{t.onboardingFlow.openNotificationSettings}</Text>
       </TouchableOpacity>
 
       {/* Next button */}
@@ -565,22 +551,5 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: FONT_SIZE.body,
     fontFamily: FONT_FAMILY.semiBold,
     color: c.accentText,
-  },
-  focusSecondaryButton: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-    paddingVertical: SPACING.lg,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-    borderColor: c.textSecondary,
-    marginBottom: SPACING.lg,
-  },
-  focusSecondaryButtonText: {
-    fontSize: FONT_SIZE.body,
-    fontFamily: FONT_FAMILY.medium,
-    color: c.textSecondary,
   },
 });

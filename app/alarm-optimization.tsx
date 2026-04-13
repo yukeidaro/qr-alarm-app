@@ -139,7 +139,7 @@ export default function AlarmOptimizationScreen() {
             t.alarmOptimization.focusStep4,
           ]}
           colors={colors}
-          settingsUrl="App-Prefs:FOCUS"
+          settingsUrl="app-settings:"
           buttonLabel={t.alarmOptimization.goToFocusSettings}
         />
 

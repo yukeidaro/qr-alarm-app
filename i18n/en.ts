@@ -60,8 +60,7 @@ export const en = {
     focusGuideStep1: 'Open Settings → ScanAlarm → Notifications',
     focusGuideStep2: 'Turn on "Time Sensitive Notifications"',
     focusGuideStep3: 'This allows alarms to ring through ALL Focus modes (Sleep, DND, Work, etc.)',
-    openFocusSettings: 'Open Focus Settings',
-    openNotificationSettings: 'Open ScanAlarm Notification Settings',
+    openFocusSettings: 'Open ScanAlarm Settings',
     focusSkip: 'Skip for now (you can set this later)',
     // Ready
     readyTitle: 'All set!',
@@ -322,7 +321,7 @@ export const en = {
     title: "Your alarm isn't ringing?",
     subtitle: "Alarms may be blocked by your phone's system settings. Check the following guidelines!",
     goToSettings: 'Go to Settings',
-    goToFocusSettings: 'Open Focus Settings',
+    goToFocusSettings: 'Open ScanAlarm Settings',
     goToScreenTimeSettings: 'Open Screen Time Settings',
     focusModeTitle: 'Allow ScanAlarm in Focus Mode',
     focusStep1: 'Go to Settings > Focus',
