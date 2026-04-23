@@ -12,7 +12,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.yuasano.qralarm",
-      "buildNumber": "35",
+      "buildNumber": "36",
       "locales": {
         "ja": "./locales/ja.json",
         "en": "./locales/en.json",
@@ -55,7 +55,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/69f046ad-ed1b-43f0-9f07-ee113e81965e"
+      "url": "https://u.expo.dev/48e439db-6d50-426a-919f-da2371a46751"
     },
     "scheme": "qralarm",
     "plugins": [
@@ -107,9 +107,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "69f046ad-ed1b-43f0-9f07-ee113e81965e"
+        "projectId": "48e439db-6d50-426a-919f-da2371a46751"
       }
     },
-    "owner": "ukdayoharry"
+    "owner": "yuworks-studio"
   }
 }
