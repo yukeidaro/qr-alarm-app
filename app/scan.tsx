@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
-  TextInput, KeyboardAvoidingView, Platform, Linking,
+  TextInput, Platform, Linking,
   Easing, ScrollView,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -24,6 +24,7 @@ import { stopAlarm } from '../services/audioService';
 import { cancelAlarm } from '../services/alarmService';
 import { t } from '../i18n';
 import { useC } from '../constants/palette';
+import { AI_CANVAS, AI_TEXT, AI_YELLOW, AI_FONTS } from '../constants/aiOS';
 
 type ScanMode = 'register' | 'dismiss';
 
@@ -52,6 +53,7 @@ const BARCODE_TYPES_FULL = [
 ] as const;
 
 const SCAN_FRAME_SIZE = 220;
+const SCAN_FRAME_RADIUS = 18;
 const CORNER_SIZE = 28;
 const CORNER_STROKE = 3;
 const CORNER_RADIUS = 6;
@@ -305,7 +307,7 @@ export default function ScanScreen() {
       setPendingKind(type === 'qr' ? 'qr' : 'barcode');
       setPendingData(data);
       setScanned(true);
-      setStatusText('スキャン成功！');
+      setStatusText(t.scan.scannedNamePrompt);
       playRegisterSuccessAnimation();
       // Auto-advance to name overlay so the user doesn't need to tap "次へ"
       completionTimers.current.push(setTimeout(() => {
@@ -407,6 +409,12 @@ export default function ScanScreen() {
   };
 
   const progress = mode === 'dismiss' ? Math.max(0, 1 - countdown / 20) : 0;
+  const instructionText =
+    mode === 'dismiss'
+      ? statusText
+      : scanned
+        ? t.scan.scannedNamePrompt
+        : t.scan.registerPrompt;
 
   // ─── Permission: checking ───
   if (!permission) {
@@ -480,9 +488,9 @@ export default function ScanScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.navBackArrow, { color: D.ink2 }]}>{'\u2039'}</Text>
-            <Text style={[styles.navBackLabel, { color: D.ink2 }]}>戻る</Text>
+            <Text style={[styles.navBackLabel, { color: D.ink2 }]}>{t.edit.close}</Text>
           </TouchableOpacity>
-          <Text style={[styles.navTitle, { color: D.ink }]}>名前をつける</Text>
+          <Text style={[styles.navTitle, { color: D.ink }]}>{t.scan.nameTitle}</Text>
           <View style={{ width: 56 }} />
         </View>
 
@@ -494,12 +502,12 @@ export default function ScanScreen() {
           {/* Success card */}
           <View style={[styles.nameSuccessCard, { backgroundColor: D.surface, borderColor: D.line }]}>
             {/* Success badge */}
-            <View style={styles.nameSuccessBadge}>
-              <View style={styles.nameCheckCircle}>
-                <Ionicons name="checkmark" size={14} color={C.green} />
+              <View style={styles.nameSuccessBadge}>
+                <View style={styles.nameCheckCircle}>
+                  <Ionicons name="checkmark" size={14} color={C.green} />
+                </View>
+                <Text style={styles.nameSuccessLabel}>{t.scan.scannedNamePrompt}</Text>
               </View>
-              <Text style={styles.nameSuccessLabel}>スキャン成功</Text>
-            </View>
 
             {/* QR / barcode preview */}
             <View style={[styles.nameQrPreview, { backgroundColor: D.surfaceAlt, borderColor: D.line }]}>
@@ -521,7 +529,7 @@ export default function ScanScreen() {
 
           {/* Name input */}
           <View style={styles.nameInputSection}>
-            <Text style={[styles.nameInputLabel, { color: D.ink3 }]}>名前</Text>
+            <Text style={[styles.nameInputLabel, { color: D.ink3 }]}>{t.scan.nameTitle}</Text>
             <View style={[
               styles.nameInputField,
               { backgroundColor: D.surface },
@@ -544,7 +552,7 @@ export default function ScanScreen() {
 
           {/* Suggestion chips */}
           <View style={styles.nameSuggestSection}>
-            <Text style={[styles.nameInputLabel, { color: D.ink3 }]}>候補（タップで入力）</Text>
+            <Text style={[styles.nameInputLabel, { color: D.ink3 }]}>Suggested</Text>
             <View style={styles.nameSuggestWrap}>
               {LOCATION_SUGGESTIONS.map((place) => {
                 const isSelected = qrName === place;
@@ -579,10 +587,10 @@ export default function ScanScreen() {
               onPress={handleSaveName}
               activeOpacity={0.7}
             >
-              <Text style={styles.nameSaveBtnText}>このコードを保存</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+                <Text style={styles.nameSaveBtnText}>{t.scan.save}</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
       </Animated.View>
     );
   }
@@ -600,91 +608,96 @@ export default function ScanScreen() {
       >
         {/* Dark overlay + viewfinder */}
         <View style={styles.cameraOverlay}>
-          {/* Nav bar */}
-          <View style={styles.navBar}>
-            <TouchableOpacity
-              style={styles.navBack}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.navBackArrow}>{'\u2039'}</Text>
-              <Text style={[styles.navBackLabel, { color: 'rgba(255,255,255,0.6)' }]}>戻る</Text>
-            </TouchableOpacity>
-            <Text style={[styles.navTitle, { color: C.white }]}>コードをスキャン</Text>
-            <View style={{ width: 56 }}>
-              {/* Torch toggle */}
+          <View style={styles.scanNavBar}>
+            <View>
+              <Text style={styles.scanEyebrow}>SCANNING</Text>
+              <Text style={styles.scanTitle}>
+                {mode === 'register' ? t.scan.registerPrompt : t.scan.dismissPrompt}
+              </Text>
+            </View>
+            <View style={styles.scanActions}>
               <TouchableOpacity
-                style={[styles.torchBtn, torch && styles.torchBtnActive]}
+                style={[styles.scanActionBtn, torch && styles.scanActionBtnActive]}
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTorch(!torch); }}
                 activeOpacity={0.7}
               >
                 <Ionicons
                   name={torch ? 'flash' : 'flash-outline'}
                   size={18}
-                  color={torch ? C.dark : 'rgba(255,255,255,0.7)'}
+                  color={torch ? AI_YELLOW.onYellow : AI_TEXT.secondary}
                 />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.scanActionBtn}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={18} color={AI_TEXT.secondary} />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Instructions */}
-          <Text style={[
-            styles.instructions,
-            scanned && { color: C.orange, fontWeight: '700' },
-          ]}>
-            {scanned ? 'スキャン成功！' : 'バーコードまたはQRコードを枠内に合わせてください'}
-          </Text>
-
           {/* Viewfinder area */}
           <View style={styles.viewfinderArea}>
-            <Animated.View style={[styles.scanFrame, { transform: [{ scale: scanScale }] }]}>
-              {/* Transparent cutout background */}
-              <View style={styles.scanFrameInner} />
+            <View style={styles.maskTop} />
+            <View style={styles.maskMiddle}>
+              <View style={styles.maskSide} />
+              <Animated.View style={[styles.scanFrame, { transform: [{ scale: scanScale }] }]}>
+                {/* Transparent cutout background */}
+                <View style={styles.scanFrameInner} />
 
-              {/* Corner brackets */}
-              <Animated.View style={[styles.corner, styles.cTL, { opacity: scanned ? 1 : cornerPulse }]} />
-              <Animated.View style={[styles.corner, styles.cTR, { opacity: scanned ? 1 : cornerPulse }]} />
-              <Animated.View style={[styles.corner, styles.cBL, { opacity: scanned ? 1 : cornerPulse }]} />
-              <Animated.View style={[styles.corner, styles.cBR, { opacity: scanned ? 1 : cornerPulse }]} />
+                {/* Corner brackets */}
+                <Animated.View style={[styles.corner, styles.cTL, { opacity: scanned ? 1 : cornerPulse }]} />
+                <Animated.View style={[styles.corner, styles.cTR, { opacity: scanned ? 1 : cornerPulse }]} />
+                <Animated.View style={[styles.corner, styles.cBL, { opacity: scanned ? 1 : cornerPulse }]} />
+                <Animated.View style={[styles.corner, styles.cBR, { opacity: scanned ? 1 : cornerPulse }]} />
 
-              {/* Scan line */}
-              {!scanned && (
-                <Animated.View style={[
-                  styles.scanLine,
-                  {
-                    opacity: scanLineOpacity,
-                    transform: [{
-                      translateY: scanLinePos.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [SCAN_FRAME_SIZE * 0.08, SCAN_FRAME_SIZE * 0.88],
-                      }),
-                    }],
-                  },
-                ]} />
-              )}
+                {/* Scan line */}
+                {!scanned && (
+                  <Animated.View style={[
+                    styles.scanLine,
+                    {
+                      opacity: scanLineOpacity,
+                      transform: [{
+                        translateY: scanLinePos.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [SCAN_FRAME_SIZE * 0.08, SCAN_FRAME_SIZE * 0.88],
+                        }),
+                      }],
+                    },
+                  ]} />
+                )}
 
-              {/* Success overlay */}
-              {scanned && pendingData && (
-                <View style={styles.successCenter}>
-                  {/* Pulse ring */}
-                  <Animated.View style={[styles.pulseRing, {
-                    transform: [{ scale: pulseRingScale }],
-                    opacity: pulseRingOpacity,
-                  }]} />
-                  {/* Checkmark circle */}
-                  <Animated.View style={[styles.successCircle, {
-                    transform: [{ scale: successScale }],
-                    opacity: successOpacity,
-                  }]}>
-                    <Ionicons name="checkmark" size={34} color={C.white} />
-                  </Animated.View>
-                </View>
-              )}
-            </Animated.View>
+                {/* Success overlay */}
+                {scanned && pendingData && (
+                  <View style={styles.successCenter}>
+                    {/* Pulse ring */}
+                    <Animated.View style={[styles.pulseRing, {
+                      transform: [{ scale: pulseRingScale }],
+                      opacity: pulseRingOpacity,
+                    }]} />
+                    {/* Checkmark circle */}
+                    <Animated.View style={[styles.successCircle, {
+                      transform: [{ scale: successScale }],
+                      opacity: successOpacity,
+                    }]}>
+                      <Ionicons name="checkmark" size={34} color={C.white} />
+                    </Animated.View>
+                  </View>
+                )}
+              </Animated.View>
+              <View style={styles.maskSide} />
+            </View>
+            <View style={styles.maskBottom} />
           </View>
 
           {/* Bottom section */}
           <View style={styles.bottomSection}>
+            <View style={styles.statusPill}>
+              <Ionicons name="scan-outline" size={18} color={AI_YELLOW.base} />
+              <Text style={styles.statusPillText}>{instructionText}</Text>
+            </View>
+
             {scanned && pendingData ? (
               <Animated.View style={{ opacity: nextButtonOpacity }}>
                 <TouchableOpacity
@@ -692,23 +705,14 @@ export default function ScanScreen() {
                   onPress={handleProceedToName}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.nextBtnText}>次へ → 名前をつける</Text>
+                  <Text style={styles.nextBtnText}>{t.scan.nameTitle}</Text>
                 </TouchableOpacity>
               </Animated.View>
-            ) : !scanned && mode === 'register' ? (
-              <View style={styles.hintPill}>
-                <Ionicons name="add" size={16} color="rgba(255,255,255,0.5)" />
-                <Text style={styles.hintPillText}>市販品のバーコードでもOK</Text>
-              </View>
             ) : null}
 
             {/* Dismiss mode: status + countdown */}
             {mode === 'dismiss' && !dismissed && (
               <View style={styles.dismissStatusSection}>
-                <View style={styles.statusPill}>
-                  <View style={styles.statusDot} />
-                  <Text style={styles.statusText}>{statusText}</Text>
-                </View>
                 {countdown > 0 && (
                   <View style={styles.countdownSection}>
                     <View style={styles.progressTrack}>
@@ -765,7 +769,7 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: C.dark,
+    backgroundColor: AI_CANVAS.bgBlack,
   },
 
   // ─── Nav bar ───
@@ -803,25 +807,71 @@ const styles = StyleSheet.create({
   // ─── Camera overlay ───
   cameraOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'transparent',
   },
-
-  // ─── Instructions ───
-  instructions: {
-    textAlign: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 16,
+  scanNavBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 58 : 34,
+    paddingBottom: 10,
+  },
+  scanEyebrow: {
+    color: AI_TEXT.muted,
+    fontSize: 11,
+    letterSpacing: 2.1,
+    fontFamily: AI_FONTS.uiMedium,
+  },
+  scanTitle: {
+    color: AI_YELLOW.base,
     fontSize: 14,
-    color: 'rgba(255,255,255,0.45)',
-    lineHeight: 21,
-    fontWeight: '400',
+    letterSpacing: 0.4,
+    marginTop: 2,
+    fontFamily: AI_FONTS.uiSemi,
+  },
+  scanActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  scanActionBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanActionBtnActive: {
+    backgroundColor: AI_YELLOW.base,
+    borderColor: AI_YELLOW.base,
   },
 
   // ─── Viewfinder ───
   viewfinderArea: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  maskTop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  maskMiddle: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  maskSide: {
+    flex: 1,
+    height: SCAN_FRAME_SIZE,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  maskBottom: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   scanFrame: {
     width: SCAN_FRAME_SIZE,
@@ -830,8 +880,9 @@ const styles = StyleSheet.create({
   },
   scanFrameInner: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(248,90,62,0.45)',
+    borderRadius: SCAN_FRAME_RADIUS,
   },
 
   // ─── Corner brackets ───
@@ -914,13 +965,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === 'ios' ? 50 : 36,
     alignItems: 'center',
+    gap: 14,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+    gap: 10,
+    backgroundColor: 'rgba(0,0,0,0.68)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
+    maxWidth: '100%',
+  },
+  statusPillText: {
+    color: AI_TEXT.primary,
+    fontSize: 14,
+    fontFamily: AI_FONTS.uiMedium,
+    textAlign: 'center',
+    flexShrink: 1,
   },
   nextBtn: {
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 999,
-    backgroundColor: C.orange,
-    shadowColor: C.orange,
+    backgroundColor: AI_YELLOW.base,
+    shadowColor: AI_YELLOW.base,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 9,
@@ -928,36 +999,8 @@ const styles = StyleSheet.create({
   },
   nextBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: AI_FONTS.uiSemi,
     color: C.white,
-  },
-  hintPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  hintPillText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '500',
-  },
-
-  // ─── Torch ───
-  torchBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'flex-end',
-  },
-  torchBtnActive: {
-    backgroundColor: C.orange,
   },
 
   // ─── Dismiss mode status ───
@@ -965,25 +1008,6 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     gap: 12,
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    gap: 8,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: C.ink3,
-  },
-  statusText: {
-    fontSize: 14,
-    color: C.white,
   },
 
   countdownSection: {

@@ -1,39 +1,17 @@
-/**
- * Edit Screen — Strict PPTX-canonical layout (slide 02 / アラーム編集).
- *
- *   ┌─────────────────────────┐
- *   │                         │
- *   │   FULLSCREEN WHEEL      │  ← time picker fills upper region
- *   │   ┌─── 10 : 34 ───┐     │
- *   │                         │
- *   ├─────────────────────────┤
- *   │  ♪    ⏰    ⇄    ▦      │  ← horizontal action bar
- *   │ Sound Snooze Repeat コード │     (コード設定 has red dot if QR not set)
- *   ├─────────────────────────┤
- *   │ ⓘ QRコードを設定しないと… │  ← warning banner (only if QR not set)
- *   ├─────────────────────────┤
- *   │ ✕      時刻を選択      ⬤✓ │  ← bottom bar (cancel / label / save)
- *   └─────────────────────────┘
- *
- * Sub-screens are accessed via the action-bar icons:
- *   - Sound        → /sounds
- *   - Snooze       → /snooze-interval
- *   - Repeat       → /repeat
- *   - コード設定   → /qr-manage
- */
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, type ReactElement } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Platform,
-  Animated,
   Alert,
+  ScrollView,
 } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   Alarm,
   getAlarms,
@@ -47,183 +25,84 @@ import {
 } from '../services/storageService';
 import { getSoundLabel } from '../services/audioService';
 import { scheduleAlarm } from '../services/alarmService';
-import {
-  getPendingSound,
-  clearPendingSound,
-} from '../services/soundSelectionStore';
-import {
-  getPendingRepeatDays,
-  clearPendingRepeatDays,
-} from '../services/repeatSelectionStore';
+import { getPendingSound, clearPendingSound } from '../services/soundSelectionStore';
+import { getPendingRepeatDays, clearPendingRepeatDays } from '../services/repeatSelectionStore';
 import { getPendingQR, clearPendingQR } from '../services/qrSelectionStore';
-import DateTimePicker from '@react-native-community/datetimepicker';
-
-/* ── Color Palette ── */
 import { useC, type AppPalette, LIGHT_PALETTE } from '../constants/palette';
-const C = LIGHT_PALETTE;
 
+const C = LIGHT_PALETTE;
 const F = {
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
   semi: 'Inter_600SemiBold',
   bold: 'Inter_700Bold',
-};
+} as const;
 
-/* ── Icons ── */
-function CloseIcon({ color = C.ink2, size = 22 }: { color?: string; size?: number }) {
+function BackArrow({ color = C.orange }: { color?: string }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d="M5 5l14 14M19 5L5 19" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    <Svg width={9} height={15} viewBox="0 0 9 15" fill="none">
+      <Path d="M8 1L2 7.5 8 14" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
 
-function CheckIcon({ color = '#FFFFFF', size = 20 }: { color?: string; size?: number }) {
+function Chevron({ color }: { color: string }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d="M5 12.5l5 5 9-11" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width={7} height={12} viewBox="0 0 7 12" fill="none">
+      <Path d="M1 1l5 5-5 5" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
 
-function SoundActionIcon({ color }: { color: string }) {
-  // Music note (♪)
-  return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M9 18V6l11-2v12"
-        stroke={color}
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Circle cx={6.5} cy={18} r={2.5} stroke={color} strokeWidth={1.8} />
-      <Circle cx={17.5} cy={16} r={2.5} stroke={color} strokeWidth={1.8} />
-    </Svg>
-  );
-}
-
-function SnoozeActionIcon({ color }: { color: string }) {
-  // Alarm clock
-  return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={13} r={8} stroke={color} strokeWidth={1.8} />
-      <Path d="M12 9v4l3 2" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M5 5l-2 2M19 5l2 2" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function RepeatActionIcon({ color }: { color: string }) {
-  // Two opposed arrows ⇄
-  return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M4 8h13l-3-3M20 16H7l3 3"
-        stroke={color}
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function QRActionIcon({ color }: { color: string }) {
-  return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-      <Rect x={3} y={3} width={7} height={7} rx={1.5} stroke={color} strokeWidth={1.8} />
-      <Rect x={14} y={3} width={7} height={7} rx={1.5} stroke={color} strokeWidth={1.8} />
-      <Rect x={3} y={14} width={7} height={7} rx={1.5} stroke={color} strokeWidth={1.8} />
-      <Rect x={14} y={14} width={3} height={3} rx={0.5} fill={color} />
-      <Rect x={18} y={14} width={3} height={3} rx={0.5} fill={color} />
-      <Rect x={14} y={18} width={3} height={3} rx={0.5} fill={color} />
-      <Rect x={18} y={18} width={3} height={3} rx={0.5} fill={color} />
-    </Svg>
-  );
-}
-
-function WarnIcon() {
+function SoundIcon({ color }: { color: string }) {
   return (
     <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
-      <Circle cx={8} cy={8} r={7} stroke={C.orange} strokeWidth={1.6} />
-      <Path d="M8 4.5v4.5M8 11.2v.6" stroke={C.orange} strokeWidth={1.6} strokeLinecap="round" />
+      <Path d="M3 8l2 6 2.5-3.5L10 14l2-6" stroke={color} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M2 3h12" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
     </Svg>
   );
 }
 
-/* ── Action card (icon + label + value/custom right side) ── */
-function ActionCard({
-  icon,
-  label,
-  value,
-  rightExtra,
-  onPress,
-  active = false,
-  dot = false,
-}: {
-  icon: (color: string) => React.ReactNode;
-  label: string;
-  value?: string;
-  rightExtra?: React.ReactNode;
-  onPress: () => void;
-  active?: boolean;
-  dot?: boolean;
-}) {
-  const iconColor = active ? C.orange : C.ink2;
+function SnoozeIcon({ color }: { color: string }) {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.cardLeft}>
-        <View style={styles.cardIconWrap}>
-          {icon(iconColor)}
-          {dot && <View style={styles.dot} />}
-        </View>
-        <Text style={styles.cardLabel}>{label}</Text>
-      </View>
-      <View style={styles.cardRight}>
-        {rightExtra ? (
-          rightExtra
-        ) : (
-          <Text
-            style={[styles.cardValue, active && { color: C.orange }]}
-            numberOfLines={1}
-          >
-            {value ?? ''}
-          </Text>
-        )}
-        <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-          <Path d="M9 6l6 6-6 6" stroke={C.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
-      </View>
-    </TouchableOpacity>
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <Circle cx={8} cy={8} r={5.5} stroke={color} strokeWidth={1.5} />
+      <Path d="M8 5v3l2 1.5" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+    </Svg>
   );
 }
 
-/* ── Day pills (S M T W T F S) for Repeat card ── */
-function DayPills({ days }: { days: number[] }) {
-  // Order: Sun, Mon, Tue, Wed, Thu, Fri, Sat (matches storage 0..6)
-  const labels = ['日', '月', '火', '水', '木', '金', '土'];
-  const set = new Set(days);
+function RepeatIcon({ color }: { color: string }) {
   return (
-    <View style={styles.pillsRow}>
-      {labels.map((l, i) => {
-        const on = set.has(i);
-        return (
-          <View
-            key={i}
-            style={[styles.pill, on ? styles.pillOn : styles.pillOff]}
-          >
-            <Text style={[styles.pillText, on ? styles.pillTextOn : styles.pillTextOff]}>
-              {l}
-            </Text>
-          </View>
-        );
-      })}
-    </View>
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <Path d="M3 5h10M3 8h6" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+      <Circle cx={12} cy={11} r={2.5} stroke={color} strokeWidth={1.3} />
+    </Svg>
   );
 }
 
-/* ── Main Screen ── */
+function QRIcon({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <Rect x={1} y={1} width={4} height={4} rx={1} stroke={color} strokeWidth={1.2} />
+      <Rect x={11} y={1} width={4} height={4} rx={1} stroke={color} strokeWidth={1.2} />
+      <Rect x={1} y={11} width={4} height={4} rx={1} stroke={color} strokeWidth={1.2} />
+      <Rect x={12.5} y={12.5} width={2} height={2} rx={0.4} fill={color} />
+    </Svg>
+  );
+}
+
+function getRepeatLabel(days: number[]): string {
+  if (days.length === 0) return 'なし';
+  const sorted = [...days].sort((a, b) => a - b);
+  if (sorted.length === 7) return '毎日';
+  const same = (arr: number[]) => arr.length === sorted.length && arr.every((d, i) => sorted[i] === d);
+  if (same([1, 2, 3, 4, 5])) return '平日';
+  if (same([0, 6])) return '週末';
+  const jp = ['日', '月', '火', '水', '木', '金', '土'];
+  return sorted.map((d) => jp[d]).join('・');
+}
+
 export default function EditScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -234,23 +113,13 @@ export default function EditScreen() {
   const [hasGlobalQR, setHasGlobalQR] = useState(false);
   const [qrName, setQrName] = useState<string>('');
   const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 320,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  useEffect(() => {
-    if (id) {
-      getAlarms().then((alarms) => {
-        const found = alarms.find((a) => a.id === id);
-        if (found) setAlarm(found);
-      });
-    }
+    if (!id) return;
+    getAlarms().then((alarms) => {
+      const found = alarms.find((a) => a.id === id);
+      if (found) setAlarm(found);
+    });
   }, [id]);
 
   useFocusEffect(
@@ -270,45 +139,38 @@ export default function EditScreen() {
         return next;
       };
 
-      const finalize = (resolved: Alarm) => {
-        // Resolve QR name from current alarm.qrCodeData (or first registered as fallback)
+      const syncQrName = (resolved: Alarm) => {
         getRegisteredQRs().then((qrs: RegisteredQR[]) => {
-          if (resolved.qrCodeData) {
-            const matched = qrs.find((q) => q.data === resolved.qrCodeData);
-            setQrName(matched ? matched.name : '');
-          } else if (qrs.length > 0) {
-            // No explicit selection — show empty so user knows to pick
+          if (!resolved.qrCodeData) {
             setQrName('');
-          } else {
-            setQrName('');
+            return;
           }
+          const matched = qrs.find((q) => q.data === resolved.qrCodeData);
+          setQrName(matched ? matched.name : '');
         });
       };
 
       if (id) {
         getAlarms().then((alarms) => {
           const found = alarms.find((a) => a.id === id);
-          const resolved = found ? applyPending(found) : applyPending(alarm);
+          const resolved = applyPending(found ?? createAlarm());
           setAlarm(resolved);
-          finalize(resolved);
-          if (pendingSound) clearPendingSound();
-          if (pendingDays) clearPendingRepeatDays();
-          if (pendingQR) clearPendingQR();
+          syncQrName(resolved);
         });
       } else {
         setAlarm((prev) => {
           const next = applyPending(prev);
-          finalize(next);
+          syncQrName(next);
           return next;
         });
-        if (pendingSound) clearPendingSound();
-        if (pendingDays) clearPendingRepeatDays();
-        if (pendingQR) clearPendingQR();
       }
+
+      if (pendingSound) clearPendingSound();
+      if (pendingDays) clearPendingRepeatDays();
+      if (pendingQR) clearPendingQR();
     }, [id]),
   );
 
-  /* ── Display helpers for action sub-labels ── */
   const soundLabel = (() => {
     if (alarm.soundId.startsWith('custom_')) {
       const s = customSounds.find((c) => c.id === alarm.soundId);
@@ -316,8 +178,6 @@ export default function EditScreen() {
     }
     return getSoundLabel(alarm.soundId);
   })();
-
-  const qrLabel = qrName || '未設定';
 
   const handleSave = async () => {
     try {
@@ -330,10 +190,39 @@ export default function EditScreen() {
     }
   };
 
+  const renderOptionRow = (
+    icon: ReactElement,
+    label: string,
+    value: string,
+    onPress: () => void,
+    isLast = false,
+  ) => (
+    <TouchableOpacity
+      style={[styles.row, !isLast && styles.rowDivider]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.rowIcon}>{icon}</View>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
+      <Chevron color={C.ink4} />
+    </TouchableOpacity>
+  );
+
   return (
-    <Animated.View style={[styles.root, { opacity: fadeAnim }]}>
-      {/* ── Apple-style native time spinner (fills available space) ── */}
-      <View style={styles.pickerArea}>
+    <View style={styles.root}>
+      <View style={styles.navBar}>
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.navSide}>
+          <BackArrow color={C.orange} />
+          <Text style={styles.navSideText}>キャンセル</Text>
+        </TouchableOpacity>
+        <Text style={styles.navTitle}>{id ? 'アラームを編集' : 'アラームを追加'}</Text>
+        <TouchableOpacity onPress={handleSave} activeOpacity={0.7} style={[styles.navSide, styles.navRight]}>
+          <Text style={styles.navSave}>保存</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.pickerWrap}>
         <DateTimePicker
           value={(() => {
             const d = new Date();
@@ -344,7 +233,7 @@ export default function EditScreen() {
           display="spinner"
           is24Hour
           locale="ja-JP"
-          themeVariant="light"
+          themeVariant={C.bg === '#F4F4F5' ? 'light' : 'dark'}
           textColor={C.ink}
           style={styles.spinner}
           onChange={(_e, date) => {
@@ -354,264 +243,170 @@ export default function EditScreen() {
         />
       </View>
 
-      {/* ── Action List (rich rows) ── */}
-      <View style={styles.actionList}>
-        <ActionCard
-          icon={(c) => <RepeatActionIcon color={c} />}
-          label="繰り返し"
-          rightExtra={<DayPills days={alarm.repeatDays} />}
-          onPress={() =>
-            router.push({ pathname: '/repeat', params: { days: alarm.repeatDays.join(',') } })
-          }
-        />
-        <ActionCard
-          icon={(c) => <SoundActionIcon color={c} />}
-          label="サウンド"
-          value={soundLabel}
-          onPress={() =>
-            router.push({ pathname: '/sounds', params: { currentSoundId: alarm.soundId } })
-          }
-        />
-        <ActionCard
-          icon={(c) => <SnoozeActionIcon color={c} />}
-          label="スヌーズ"
-          value={alarm.snoozeEnabled ? 'オン' : 'オフ'}
-          onPress={() => router.push('/snooze-interval')}
-        />
-        <ActionCard
-          icon={(c) => <QRActionIcon color={c} />}
-          label="コード設定"
-          value={qrLabel}
-          active={hasGlobalQR}
-          dot={!hasGlobalQR}
-          onPress={() => router.push({ pathname: '/qr-manage', params: { mode: 'select' } })}
-        />
-      </View>
-
-      {/* ── Warning Banner (when QR not set) ── */}
-      {!hasGlobalQR && (
-        <View style={styles.warning}>
-          <WarnIcon />
-          <Text style={styles.warningText}>
-            QRコードを設定しないとアラームは機能しません
-          </Text>
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentInner} showsVerticalScrollIndicator={false}>
+        <View style={styles.sectionCard}>
+          {renderOptionRow(
+            <RepeatIcon color={C.orange} />,
+            '繰り返し',
+            getRepeatLabel(alarm.repeatDays),
+            () => router.push({ pathname: '/repeat', params: { days: alarm.repeatDays.join(',') } }),
+          )}
+          {renderOptionRow(
+            <SoundIcon color={C.orange} />,
+            'サウンド',
+            soundLabel,
+            () => router.push({ pathname: '/sounds', params: { currentSoundId: alarm.soundId } }),
+          )}
+          {renderOptionRow(
+            <SnoozeIcon color={C.orange} />,
+            'スヌーズ',
+            alarm.snoozeEnabled ? 'オン' : 'オフ',
+            () => router.push('/snooze-interval'),
+          )}
+          {renderOptionRow(
+            <QRIcon color={C.orange} />,
+            'コード設定',
+            qrName || '未設定',
+            () => router.push({ pathname: '/qr-manage', params: { mode: 'select' } }),
+            true,
+          )}
         </View>
-      )}
 
-      {/* ── Bottom Bar (cancel left; large orange save FAB centered) ── */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.bottomClose}
-          activeOpacity={0.6}
-        >
-          <CloseIcon />
-        </TouchableOpacity>
-
-        <View style={styles.bottomCenter}>
-          <View style={styles.fabGlowRing}>
-            <TouchableOpacity
-              onPress={handleSave}
-              style={styles.checkBtn}
-              activeOpacity={0.85}
-            >
-              <CheckIcon size={26} />
-            </TouchableOpacity>
+        {!hasGlobalQR && (
+          <View style={styles.warning}>
+            <Text style={styles.warningTitle}>QRコード未設定</Text>
+            <Text style={styles.warningText}>コード設定を選んで解除用QR/Barcodeを設定してください。</Text>
           </View>
-        </View>
-      </View>
-    </Animated.View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
-/* ── Styles ── */
 const styles = makeStyles(C);
 function makeStyles(C: AppPalette) {
   return StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: C.bg,
-    ...Platform.select({ ios: { paddingTop: 50 }, android: { paddingTop: 28 } }),
-  },
-
-  /* Native spinner picker area — fixed-ish height so cards have room */
-  pickerArea: {
-    height: 240,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 0,
-    paddingTop: 0,
-  },
-  spinner: {
-    width: '100%',
-    height: 240,
-  },
-
-  /* Action List (rich row cards) */
-  actionList: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    gap: 10,
-    backgroundColor: C.bg,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: C.surface,
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: C.lineSoft,
-  },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flexShrink: 0,
-  },
-  cardRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexShrink: 1,
-    marginLeft: 12,
-  },
-  cardIconWrap: {
-    position: 'relative',
-    width: 26,
-    height: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardLabel: {
-    fontSize: 15,
-    color: C.ink,
-    fontFamily: F.semi,
-    fontWeight: '600',
-  },
-  cardValue: {
-    fontSize: 14,
-    color: C.ink2,
-    fontFamily: F.medium,
-    fontWeight: '500',
-    maxWidth: 180,
-    textAlign: 'right',
-  },
-  dot: {
-    position: 'absolute',
-    top: -2,
-    right: -3,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: C.orange,
-    borderWidth: 1.5,
-    borderColor: C.surface,
-  },
-
-  /* Day pills inside Repeat card */
-  pillsRow: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  pill: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pillOn: {
-    backgroundColor: C.orange,
-  },
-  pillOff: {
-    backgroundColor: C.surfaceAlt,
-    borderWidth: 1,
-    borderColor: C.line,
-  },
-  pillText: {
-    fontSize: 10,
-    fontFamily: F.bold,
-    fontWeight: '700',
-  },
-  pillTextOn: {
-    color: '#FFFFFF',
-  },
-  pillTextOff: {
-    color: C.ink3,
-  },
-
-  /* Warning Banner */
-  warning: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: C.warnBg,
-    marginHorizontal: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  warningText: {
-    flex: 1,
-    fontSize: 12,
-    color: C.warnInk,
-    fontFamily: F.semi,
-    fontWeight: '600',
-    lineHeight: 17,
-  },
-
-  /* Bottom Bar */
-  bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 52 : 40,
-    backgroundColor: C.bg,
-  },
-  bottomClose: {
-    position: 'absolute',
-    left: 16,
-    bottom: Platform.OS === 'ios' ? 52 : 40,
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bottomCenter: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabGlowRing: {
-    borderRadius: 999,
-    padding: 6,
-    backgroundColor: 'rgba(248,90,62,0.08)',
-  },
-  checkBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: C.orange,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: C.orange,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.22,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-});
+    root: {
+      flex: 1,
+      backgroundColor: C.bg,
+      ...Platform.select({ ios: { paddingTop: 50 }, android: { paddingTop: 28 } }),
+    },
+    navBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 14,
+      paddingBottom: 6,
+    },
+    navSide: {
+      width: 96,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    navRight: {
+      justifyContent: 'flex-end',
+    },
+    navSideText: {
+      color: C.orange,
+      fontSize: 16,
+      fontFamily: F.semi,
+    },
+    navSave: {
+      color: C.orange,
+      fontSize: 16,
+      fontFamily: F.bold,
+    },
+    navTitle: {
+      flex: 1,
+      textAlign: 'center',
+      fontSize: 17,
+      color: C.ink,
+      letterSpacing: -0.3,
+      fontFamily: F.bold,
+    },
+    pickerWrap: {
+      height: 240,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: C.line,
+      paddingHorizontal: 12,
+    },
+    spinner: {
+      width: '100%',
+      height: 240,
+    },
+    content: {
+      flex: 1,
+    },
+    contentInner: {
+      paddingHorizontal: 20,
+      paddingTop: 18,
+      paddingBottom: 28,
+    },
+    sectionCard: {
+      backgroundColor: C.surface,
+      borderWidth: 1,
+      borderColor: C.line,
+      borderRadius: 18,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+    },
+    rowDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: C.lineSoft,
+    },
+    rowIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: C.orangeDim,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    rowLabel: {
+      flex: 1,
+      fontSize: 15,
+      color: C.ink,
+      letterSpacing: -0.2,
+      fontFamily: F.medium,
+    },
+    rowValue: {
+      maxWidth: 140,
+      textAlign: 'right',
+      fontSize: 14,
+      color: C.ink3,
+      fontFamily: F.medium,
+      marginRight: 2,
+    },
+    warning: {
+      marginTop: 14,
+      backgroundColor: C.warnBg,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+    },
+    warningTitle: {
+      color: C.warnInk,
+      fontSize: 12,
+      fontFamily: F.bold,
+      marginBottom: 4,
+      letterSpacing: 0.1,
+    },
+    warningText: {
+      color: C.warnInk,
+      fontSize: 12,
+      lineHeight: 17,
+      fontFamily: F.medium,
+    },
+  });
 }
+

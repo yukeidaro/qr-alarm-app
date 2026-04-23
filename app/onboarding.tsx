@@ -5,9 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Image,
+  ImageSourcePropType,
   Platform,
   Linking,
-  Dimensions,
   AppState,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -16,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
 import { useCameraPermissions } from 'expo-camera';
-import Svg, { Path, Rect, Circle, Line, G, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { ACTIVE_OPACITY } from '../constants/spacing';
 import { createAlarm, saveAlarm } from '../services/storageService';
 import { scheduleAlarm } from '../services/alarmService';
@@ -48,8 +49,6 @@ const F = {
 
 const ONBOARDING_KEY = '@qralarm/onboarding_done';
 const NAME_KEY = '@qralarm/user_name';
-
-const { width: SCREEN_W } = Dimensions.get('window');
 
 type Step = 'splash' | 'value1' | 'value2' | 'permissions' | 'firstAlarm' | 'ready';
 
@@ -107,7 +106,7 @@ function SkipLink({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 // ─────────────────────────────────────────────
-// SVG Illustrations
+// Illustrations
 // ─────────────────────────────────────────────
 
 /** App icon: orange square with clock + QR finder */
@@ -136,99 +135,23 @@ function AppIcon() {
   );
 }
 
-/** Value1 illustration: alarm scene comparison */
-function Value1Illustration({ sceneIndex }: { sceneIndex: number }) {
-  // Scene 0: alarm → snooze → fail   Scene 1: alarm → walk to QR → success
+const VALUE1_MEDIA = require('../assets/onboarding/wake-up-card.png');
+const VALUE2_MEDIA = require('../assets/onboarding/scan-dismiss-card.png');
+
+function OnboardingMediaCard({
+  source,
+  label,
+}: {
+  source: ImageSourcePropType;
+  label: string;
+}) {
   return (
     <View style={s.illustrationCard}>
-      <Svg width={280} height={180} viewBox="0 0 280 180">
-        {sceneIndex === 0 ? (
-          <G>
-            {/* Bed icon */}
-            <Rect x={30} y={80} width={80} height={40} rx={8} fill={C.lineSoft} />
-            <Circle cx={50} cy={74} r={12} fill={C.ink4} />
-            {/* Alarm ringing */}
-            <Rect x={140} y={60} width={32} height={36} rx={6} fill={C.orangeDim} stroke={C.orange} strokeWidth={1.5} />
-            <Line x1={156} y1={68} x2={156} y2={80} stroke={C.orange} strokeWidth={2} strokeLinecap="round" />
-            {/* Snooze tap arrow */}
-            <Path d="M172 78 L200 78" stroke={C.ink3} strokeWidth={1.5} strokeDasharray="4 3" />
-            {/* Zzz */}
-            <SvgText x={210} y={76} fill={C.ink3} fontSize={18} fontWeight="bold">Zzz</SvgText>
-            {/* Cross / fail */}
-            <Line x1={120} y1={140} x2={160} y2={160} stroke={C.orange} strokeWidth={2.5} strokeLinecap="round" />
-            <Line x1={160} y1={140} x2={120} y2={160} stroke={C.orange} strokeWidth={2.5} strokeLinecap="round" />
-            <SvgText x={80} y={170} fill={C.ink3} fontSize={11}>Late again...</SvgText>
-          </G>
-        ) : (
-          <G>
-            {/* Person walking */}
-            <Circle cx={60} cy={60} r={10} fill={C.ink4} />
-            <Line x1={60} y1={70} x2={60} y2={100} stroke={C.ink4} strokeWidth={2} />
-            <Line x1={60} y1={100} x2={48} y2={120} stroke={C.ink4} strokeWidth={2} />
-            <Line x1={60} y1={100} x2={72} y2={120} stroke={C.ink4} strokeWidth={2} />
-            {/* Arrow */}
-            <Path d="M80 80 L140 80" stroke={C.orange} strokeWidth={1.5} strokeDasharray="4 3" />
-            <Path d="M135 75 L145 80 L135 85" fill={C.orange} />
-            {/* QR code */}
-            <Rect x={160} y={55} width={50} height={50} rx={8} fill={C.surface} stroke={C.line} strokeWidth={1.5} />
-            <Rect x={168} y={63} width={12} height={12} rx={2} fill={C.ink} />
-            <Rect x={190} y={63} width={12} height={12} rx={2} fill={C.ink} />
-            <Rect x={168} y={85} width={12} height={12} rx={2} fill={C.ink} />
-            <Rect x={190} y={85} width={6} height={6} rx={1} fill={C.ink} />
-            {/* Checkmark */}
-            <Circle cx={185} cy={140} r={16} fill="#E8F5E9" />
-            <Path d="M177 140 L183 146 L195 134" stroke="#4CAF50" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            <SvgText x={100} y={170} fill={C.ink2} fontSize={11}>Wide awake!</SvgText>
-          </G>
-        )}
-      </Svg>
-    </View>
-  );
-}
-
-/** Value2 illustration: barcode scan animation */
-function Value2Illustration({ scanProgress }: { scanProgress: Animated.Value }) {
-  const scanY = scanProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [20, 140],
-  });
-
-  return (
-    <View style={s.illustrationCard}>
-      <Svg width={280} height={180} viewBox="0 0 280 180">
-        {/* Corner brackets */}
-        <Path d="M60 30 L60 20 L80 20" stroke={C.orange} strokeWidth={2.5} fill="none" strokeLinecap="round" />
-        <Path d="M200 20 L220 20 L220 30" stroke={C.orange} strokeWidth={2.5} fill="none" strokeLinecap="round" />
-        <Path d="M60 150 L60 160 L80 160" stroke={C.orange} strokeWidth={2.5} fill="none" strokeLinecap="round" />
-        <Path d="M200 160 L220 160 L220 150" stroke={C.orange} strokeWidth={2.5} fill="none" strokeLinecap="round" />
-
-        {/* Barcode lines */}
-        {[80, 88, 94, 102, 108, 118, 124, 130, 140, 146, 154, 162, 170, 178, 186, 194, 200].map(
-          (x, i) => (
-            <Rect
-              key={i}
-              x={x}
-              y={40}
-              width={i % 3 === 0 ? 4 : 2}
-              height={100}
-              fill={C.ink}
-              opacity={0.75}
-            />
-          )
-        )}
-      </Svg>
-      {/* Animated scan line overlay (RN Animated, not SVG) */}
-      <Animated.View
-        style={{
-          position: 'absolute',
-          left: 50,
-          width: 180,
-          height: 2,
-          backgroundColor: C.orange,
-          top: scanY,
-          opacity: 0.8,
-          borderRadius: 1,
-        }}
+      <Image
+        source={source}
+        style={s.illustrationImage}
+        resizeMode="cover"
+        accessibilityLabel={label}
       />
     </View>
   );
@@ -417,12 +340,6 @@ export default function OnboardingScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
-  // Value1 scene alternation (8s loop)
-  const [sceneIndex, setSceneIndex] = useState(0);
-
-  // Value2 scan line animation (4s loop)
-  const scanProgress = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     setTimeout(() => animateIn(), 100);
     // Check existing notification permission
@@ -439,37 +356,6 @@ export default function OnboardingScreen() {
     });
     return () => subscription.remove();
   }, []);
-
-  // Value1: alternate scenes every 4s
-  useEffect(() => {
-    if (step !== 'value1') return;
-    const interval = setInterval(() => {
-      setSceneIndex((prev) => (prev === 0 ? 1 : 0));
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [step]);
-
-  // Value2: scan line loop
-  useEffect(() => {
-    if (step !== 'value2') return;
-    let cancelled = false;
-    const loop = () => {
-      if (cancelled) return;
-      scanProgress.setValue(0);
-      Animated.timing(scanProgress, {
-        toValue: 1,
-        duration: 4000,
-        useNativeDriver: false,
-      }).start(({ finished }) => {
-        if (finished && !cancelled) loop();
-      });
-    };
-    loop();
-    return () => {
-      cancelled = true;
-      scanProgress.stopAnimation();
-    };
-  }, [step]);
 
   // Auto-request notifications when entering permissions step
   useEffect(() => {
@@ -583,10 +469,10 @@ export default function OnboardingScreen() {
 
   const renderValue1 = () => (
     <Animated.View style={[s.stepWrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <Value1Illustration sceneIndex={sceneIndex} />
-      <View style={s.copyBlock}>
-        <Text style={s.heading}>Wake up. For real.</Text>
-        <Text style={s.body}>
+      <OnboardingMediaCard source={VALUE1_MEDIA} label="Wake up onboarding card" />
+      <View style={[s.copyBlock, s.valueCopyBlock]}>
+        <Text style={[s.heading, s.valueHeading]}>Wake up. For real.</Text>
+        <Text style={[s.body, s.valueBody]}>
           This alarm won't stop until you scan a barcode. Place it somewhere
           you have to walk to — you'll never oversleep again.
         </Text>
@@ -601,10 +487,10 @@ export default function OnboardingScreen() {
 
   const renderValue2 = () => (
     <Animated.View style={[s.stepWrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <Value2Illustration scanProgress={scanProgress} />
-      <View style={s.copyBlock}>
-        <Text style={s.heading}>Scan to dismiss</Text>
-        <Text style={s.body}>
+      <OnboardingMediaCard source={VALUE2_MEDIA} label="Scan to dismiss onboarding card" />
+      <View style={[s.copyBlock, s.valueCopyBlock]}>
+        <Text style={[s.heading, s.valueHeading]}>Scan to dismiss</Text>
+        <Text style={[s.body, s.valueBody]}>
           Any barcode works — the one on your toothpaste, a cereal box, or a
           water bottle. No special QR code needed.
         </Text>
@@ -895,18 +781,29 @@ const s = StyleSheet.create({
   // ─── Value props ───
   illustrationCard: {
     width: '100%',
+    maxWidth: 350,
+    aspectRatio: 350 / 220,
     backgroundColor: C.surface,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: C.line,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 24,
-    marginBottom: 32,
+    alignSelf: 'center',
+    marginBottom: 28,
     overflow: 'hidden',
+  },
+  illustrationImage: {
+    width: '100%',
+    height: '100%',
   },
   copyBlock: {
     marginBottom: 32,
+  },
+  valueCopyBlock: {
+    width: '100%',
+    paddingHorizontal: 4,
+    marginBottom: 28,
   },
   heading: {
     fontSize: 28,
@@ -914,11 +811,18 @@ const s = StyleSheet.create({
     color: C.ink,
     marginBottom: 10,
   },
+  valueHeading: {
+    textAlign: 'left',
+    marginBottom: 12,
+  },
   body: {
     fontSize: 15,
     fontFamily: F.regular,
     color: C.ink2,
     lineHeight: 22,
+  },
+  valueBody: {
+    textAlign: 'left',
   },
 
   // ─── Permissions ───
