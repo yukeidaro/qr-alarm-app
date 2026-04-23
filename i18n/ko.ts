@@ -13,6 +13,7 @@ export const ko = {
   home: {
     qrRegistered: '✓ QR',
     qrRegister: 'QR 등록',
+    qrNotSet: '미설정',
     alarms: '알람',
 
     emptyTitle: '첫 번째 알람을 만들어 보세요',
@@ -21,9 +22,8 @@ export const ko = {
 
   onboarding: {
     title: 'QR / 바코드 등록',
-    description: '알람을 해제할 QR코드 또는 바코드를 등록해 주세요.',
+    description: '알람을 해제할 QR코드 또는 바코드를 등록해 주세요. 칫솔, 물병, 시판 제품의 바코드 무엇이든 사용할 수 있습니다.',
     registerNow: '지금 등록하기',
-    later: '나중에',
   },
 
   onboardingFlow: {
@@ -271,6 +271,8 @@ export const ko = {
     voice_cheerful_en_3: '밝은 목소리 3 (영어)',
     voice_okiro_ja: '일어나! (일본어)',
   } as Record<string, string>,
+
+  soundDescriptions: {} as Record<string, string>,
 
   // Settings
   settings: {

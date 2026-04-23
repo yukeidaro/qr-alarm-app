@@ -85,8 +85,12 @@ export const ANIMATION = {
     fast: 200,
     /** 300ms — トーストフェードイン */
     normal: 300,
+    /** 350ms — カード出現（Video参照） */
+    cardAppear: 350,
     /** 400ms — トーストフェードアウト */
     slow: 400,
+    /** 450ms — テーマ切替トランジション */
+    themeTransition: 450,
     /** 1000ms — パルス（緊急） */
     pulseUrgent: 1000,
     /** 1500ms — パルス（警告） */
@@ -95,6 +99,8 @@ export const ANIMATION = {
     display: 1500,
     /** 2000ms — パルス（通常）、サウンドプレビュー */
     pulseNormal: 2000,
+    /** 2400ms — ドットマトリクス明滅 */
+    dotPulse: 2400,
   },
   /** タイピングアニメーション速度 (ms/文字) */
   typingSpeed: {
@@ -111,6 +117,13 @@ export const ANIMATION = {
     normal: 1.02,
     warning: 1.03,
     urgent: 1.04,
+  },
+  /** Spring animation constants — Video参照のふわっとした動き */
+  spring: {
+    damping: 0.7,
+    stiffness: 300,
+    friction: 8,   // RN Animated.spring の friction
+    tension: 60,   // RN Animated.spring の tension
   },
 } as const;
 

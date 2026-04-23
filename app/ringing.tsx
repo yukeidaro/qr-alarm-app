@@ -1,4 +1,8 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+/**
+ * Ringing Screen — AI OS design
+ * フルスクリーン純黒 + crimson radial glow + 巨大Inter Bold clock + scan/snooze CTAs.
+ */
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +14,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Alarm,
   getAlarms,
@@ -17,17 +22,22 @@ import {
   getRingingBackground,
   getSnoozeCount,
   incrementSnoozeCount,
-  resetSnoozeCount,
   saveSnoozeTime,
 } from '../services/storageService';
 import { playAlarm, stopAlarm, getSoundOutputMode } from '../services/audioService';
 import { scheduleSnooze } from '../services/alarmService';
 import { useRewardedAd, AD_UNIT_IDS } from '../services/adService';
 import AdBanner from '../components/AdBanner';
-import { ThemeColors } from '../constants/colors';
-import { useTheme } from '../theme';
-import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
-import { SPACING, SCREEN_PADDING, RADIUS, ANIMATION, TIMER, ACTIVE_OPACITY } from '../constants/spacing';
+import {
+  AI_CANVAS,
+  AI_TEXT,
+  AI_YELLOW,
+  AI_FONTS,
+  AI_RADIUS,
+  AI_ACCENTS,
+} from '../constants/aiOS';
+import { PixelClock, PillCTA } from '../components/AiPrimitives';
+import { TIMER } from '../constants/spacing';
 import { t } from '../i18n';
 
 const MAX_FREE_SNOOZE = 2;
@@ -36,38 +46,34 @@ export default function RingingScreen() {
   const router = useRouter();
   const { alarmId } = useLocalSearchParams<{ alarmId?: string }>();
   const { showAd: showRewardedAd, isLoaded: rewardedLoaded } = useRewardedAd();
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [alarm, setAlarm] = useState<Alarm | null>(null);
-  const [alarmReady, setAlarmReady] = useState(!alarmId); // ready immediately if no alarmId
+  const [alarmReady, setAlarmReady] = useState(!alarmId);
   const [hasQR, setHasQR] = useState(false);
   const [bgUri, setBgUri] = useState<string | null>(null);
   const [snoozeCount, setSnoozeCount] = useState(0);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+
   const fadeIn = useRef(new Animated.Value(0)).current;
-  const glowAnim = useRef(new Animated.Value(0.3)).current;
+  const glowPulse = useRef(new Animated.Value(0.3)).current;
+  const clockPulse = useRef(new Animated.Value(1)).current;
+
+  // Use crimson glow always for ringing (matches Behance reference)
+  const ringingAccent = AI_ACCENTS.crimson;
 
   useEffect(() => {
-    // Fade in the screen
     Animated.timing(fadeIn, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
+      toValue: 1, duration: 700, useNativeDriver: true,
     }).start();
-
-    // Breathing glow
-    const glow = Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
-        Animated.timing(glowAnim, { toValue: 0.3, duration: 3000, useNativeDriver: true }),
-      ])
+        Animated.timing(glowPulse, { toValue: 1, duration: 2400, useNativeDriver: true }),
+        Animated.timing(glowPulse, { toValue: 0.4, duration: 2400, useNativeDriver: true }),
+      ]),
     );
-    glow.start();
-    return () => glow.stop();
+    loop.start();
+    return () => loop.stop();
   }, []);
 
-  // Load alarm data on mount
   useEffect(() => {
     const init = async () => {
       const qr = await getRegisteredQR();
@@ -77,7 +83,6 @@ export default function RingingScreen() {
       const effectiveId = alarmId || 'default';
       const count = await getSnoozeCount(effectiveId);
       setSnoozeCount(count);
-
       if (alarmId) {
         const alarms = await getAlarms();
         const found = alarms.find((a) => a.id === alarmId);
@@ -89,7 +94,6 @@ export default function RingingScreen() {
     return () => { stopAlarm(); };
   }, [alarmId]);
 
-  // Play alarm on focus (initial + returning from scan screen)
   useFocusEffect(
     useCallback(() => {
       if (!alarmReady) return;
@@ -99,21 +103,26 @@ export default function RingingScreen() {
       getSoundOutputMode().then((mode) => {
         playAlarm(soundId, undefined, volume, useFadeIn, mode);
       });
-      return () => { /* stopAlarm handled by scan screen or unmount */ };
-    }, [alarm, alarmReady])
+      // Stop sound when leaving (e.g., when navigating to scan screen)
+      // It will resume on refocus because this effect re-runs.
+      return () => { stopAlarm(); };
+    }, [alarm, alarmReady]),
   );
 
+  // Pulse the clock when snooze count >= 2 (urgency)
   useEffect(() => {
-    const duration = snoozeCount >= 2 ? ANIMATION.duration.pulseUrgent : ANIMATION.duration.pulseNormal;
-    const scale = snoozeCount >= 2 ? ANIMATION.pulseScale.urgent : ANIMATION.pulseScale.normal;
-    const pulse = Animated.loop(
+    if (snoozeCount < 2) {
+      clockPulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: scale, duration, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration, useNativeDriver: true }),
-      ])
+        Animated.timing(clockPulse, { toValue: 1.04, duration: 700, useNativeDriver: true }),
+        Animated.timing(clockPulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ]),
     );
-    pulse.start();
-    return () => pulse.stop();
+    loop.start();
+    return () => loop.stop();
   }, [snoozeCount]);
 
   const navigateToSnooze = () => {
@@ -124,10 +133,7 @@ export default function RingingScreen() {
     await stopAlarm();
     const effectiveId = alarmId || 'default';
     await incrementSnoozeCount(effectiveId);
-    if (alarm) {
-      await scheduleSnooze(alarm);
-    }
-    // Always save snooze time so countdown works even without alarm data
+    if (alarm) await scheduleSnooze(alarm);
     await saveSnoozeTime(effectiveId, Date.now() + TIMER.snoozeDuration);
     navigateToSnooze();
   };
@@ -136,11 +142,8 @@ export default function RingingScreen() {
     if (snoozeCount >= MAX_FREE_SNOOZE) {
       if (rewardedLoaded) {
         const earned = await showRewardedAd();
-        if (earned) {
-          await doSnooze();
-        } else {
-          Alert.alert(t.ringing.adRequired, t.ringing.adRequiredMessage);
-        }
+        if (earned) await doSnooze();
+        else Alert.alert(t.ringing.adRequired, t.ringing.adRequiredMessage);
       } else {
         Alert.alert(t.ringing.adNotReady, t.ringing.adWait);
       }
@@ -164,67 +167,78 @@ export default function RingingScreen() {
       ? t.ringing.snoozeCount(snoozeCount, MAX_FREE_SNOOZE)
       : t.ringing.snooze;
 
-  // Dynamic background based on urgency
-  const urgencyBg = snoozeCount >= 2 ? colors.bgUrgency2 : snoozeCount >= 1 ? colors.bgUrgency1 : colors.bgPrimary;
-
   const content = (
-    <Animated.View style={[styles.innerContainer, { opacity: fadeIn }]}>
-      {/* Top banner ad */}
+    <Animated.View style={[styles.inner, { opacity: fadeIn }]}>
+      {/* Top ad */}
       <View style={styles.topAd}>
         <AdBanner unitId={AD_UNIT_IDS.bannerRinging} />
       </View>
 
       {/* Snooze count badge */}
       {snoozeCount > 0 && (
-        <View style={[styles.snoozeBadge, snoozeCount >= 2 && styles.snoozeBadgeUrgent]}>
-          <Text style={[styles.snoozeBadgeText, snoozeCount >= 2 && styles.snoozeBadgeTextUrgent]}>
+        <View
+          style={[
+            styles.snoozeBadge,
+            snoozeCount >= 2 && { backgroundColor: 'rgba(255,42,42,0.18)' },
+          ]}
+        >
+          <Text
+            style={[
+              styles.snoozeBadgeText,
+              snoozeCount >= 2 && { color: ringingAccent.hex, fontFamily: AI_FONTS.uiSemi },
+            ]}
+          >
             {t.ringing.snoozeBadge(snoozeCount)}
           </Text>
         </View>
       )}
 
-      {/* Time + glow container */}
-      <View style={styles.timeContainer}>
-        <Animated.View style={[styles.timeGlow, { opacity: glowAnim }]} />
-        <Animated.Text
-          style={[styles.time, { transform: [{ scale: pulseAnim }] }]}
-          adjustsFontSizeToFit
-          numberOfLines={1}
-        >
-          {displayTime}
-        </Animated.Text>
+      {/* Hero: pulsing radial glow + huge LED clock */}
+      <View style={styles.clockBlock}>
+        <Animated.View
+          style={[
+            styles.glowOrb,
+            {
+              opacity: glowPulse,
+              transform: [{
+                scale: glowPulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.1] }),
+              }],
+            },
+          ]}
+        />
+        <Animated.View style={{ transform: [{ scale: clockPulse }] }}>
+          <PixelClock
+            time={displayTime}
+            size={140}
+            color={ringingAccent.hex}
+            glow={ringingAccent.hex}
+          />
+        </Animated.View>
+        <Text style={styles.greeting}>{t.ringing.greeting}</Text>
       </View>
-
-      {/* Greeting */}
-      <Text style={styles.greeting}>{t.ringing.greeting}</Text>
-
-      {/* Urgency message */}
-      {snoozeCount >= 2 && (
-        <View style={styles.urgencyBadge}>
-          <Text style={styles.urgencyText}>{t.ringing.urgency}</Text>
-        </View>
-      )}
 
       {/* Actions */}
       <View style={styles.actions}>
-        <AdBanner unitId={AD_UNIT_IDS.bannerRinging} />
+        <View style={styles.bottomAd}>
+          <AdBanner unitId={AD_UNIT_IDS.bannerRinging} />
+        </View>
 
-        {/* Main CTA — scan to dismiss */}
-        <TouchableOpacity style={styles.mainButton} onPress={handleScanQR} activeOpacity={0.8}>
-          <View style={styles.mainButtonGlow} />
-          <Text style={styles.mainButtonText}>{t.ringing.scanToDismiss}</Text>
-        </TouchableOpacity>
+        <PillCTA onPress={handleScanQR} style={styles.scanPill}>
+          <View style={styles.scanInner}>
+            <Ionicons name="scan-outline" size={18} color={AI_YELLOW.onYellow} />
+            <Text style={styles.scanText}>{t.ringing.scanToDismiss}</Text>
+          </View>
+        </PillCTA>
 
-        {/* Snooze — intentionally subdued, hidden if snooze disabled */}
-        {(alarm?.snoozeEnabled ?? true) && (
-          <TouchableOpacity style={styles.snoozeButton} onPress={handleSnooze} activeOpacity={ACTIVE_OPACITY.default}>
-            <Text style={styles.snoozeText}>{snoozeLabel}</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.bottomChrome}>
+          {(alarm?.snoozeEnabled ?? true) && (
+            <TouchableOpacity onPress={handleSnooze} style={styles.snoozeBtn} activeOpacity={0.7}>
+              <Text style={styles.snoozeText}>{snoozeLabel}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-        {!hasQR && (
-          <Text style={styles.noQrHint}>{t.ringing.noQrHint}</Text>
-        )}
+        {!hasQR && <Text style={styles.noQrHint}>{t.ringing.noQrHint}</Text>}
       </View>
     </Animated.View>
   );
@@ -236,134 +250,121 @@ export default function RingingScreen() {
       </ImageBackground>
     );
   }
-
-  return <View style={[styles.container, { backgroundColor: urgencyBg }]}>{content}</View>;
+  return <View style={styles.container}>{content}</View>;
 }
 
-const makeStyles = (c: ThemeColors) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: AI_CANVAS.bgBlack,
   },
-  innerContainer: {
+  inner: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: SCREEN_PADDING.horizontal,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   bgOverlay: {
     flex: 1,
-    backgroundColor: c.overlay.black35,
+    backgroundColor: 'rgba(0,0,0,0.65)',
   },
   topAd: {
-    position: 'absolute',
-    top: SPACING['7xl'],
-    left: 0,
-    right: 0,
+    width: '100%',
+    alignItems: 'center',
   },
-  timeContainer: {
+  snoozeBadge: {
+    backgroundColor: AI_CANVAS.bgTile,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: AI_RADIUS.pill,
+    borderWidth: 1,
+    borderColor: AI_CANVAS.hairline,
+    marginTop: 16,
+  },
+  snoozeBadgeText: {
+    fontSize: 11,
+    color: AI_TEXT.secondary,
+    fontFamily: AI_FONTS.uiMedium,
+    letterSpacing: 1,
+  },
+  clockBlock: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
   },
-  timeGlow: {
+  glowOrb: {
     position: 'absolute',
-    width: '90%',
-    height: 180,
-    borderRadius: 150,
-    backgroundColor: c.warmGlowStrong,
-    alignSelf: 'center',
-  },
-  snoozeBadge: {
-    backgroundColor: c.bgSecondary,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.s,
-    borderRadius: RADIUS.full,
-    marginBottom: SPACING.xxl,
-  },
-  snoozeBadgeUrgent: {
-    backgroundColor: 'rgba(240, 149, 148, 0.12)',
-  },
-  snoozeBadgeText: {
-    fontSize: FONT_SIZE.labelSmall,
-    color: c.textMuted,
-    fontFamily: FONT_FAMILY.regular,
-  },
-  snoozeBadgeTextUrgent: {
-    color: c.error,
-    fontFamily: FONT_FAMILY.medium,
-  },
-  time: {
-    fontSize: FONT_SIZE.display,
-    fontFamily: FONT_FAMILY.bold,
-    color: c.textPrimary,
-    letterSpacing: 2,
-    textAlign: 'center',
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    backgroundColor: 'rgba(255,42,42,0.18)',
+    shadowColor: '#FF2A2A',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 80,
   },
   greeting: {
-    fontSize: FONT_SIZE.subheading,
-    color: c.textMuted,
-    marginTop: SPACING.xl,
-    fontFamily: FONT_FAMILY.regular,
-  },
-  urgencyBadge: {
-    marginTop: SPACING.base,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.full,
-    backgroundColor: 'rgba(240, 149, 148, 0.10)',
-  },
-  urgencyText: {
-    fontSize: FONT_SIZE.bodySmall,
-    color: c.error,
-    fontFamily: FONT_FAMILY.semiBold,
+    color: AI_TEXT.secondary,
+    fontFamily: AI_FONTS.uiMedium,
+    fontSize: 13,
+    letterSpacing: 2,
+    marginTop: 24,
+    textTransform: 'uppercase',
   },
   actions: {
-    position: 'absolute',
-    bottom: SCREEN_PADDING.bottom,
-    left: SCREEN_PADDING.horizontal,
-    right: SCREEN_PADDING.horizontal,
-    alignItems: 'center',
-    gap: SPACING.base,
-  },
-  mainButton: {
     width: '100%',
-    borderRadius: RADIUS.full,
-    backgroundColor: c.accent,
-    paddingVertical: SPACING.xl,
     alignItems: 'center',
-    overflow: 'hidden',
+    gap: 12,
   },
-  mainButtonGlow: {
-    position: 'absolute',
-    top: -10,
-    width: '60%',
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: c.warmGlowStrong,
-    alignSelf: 'center',
-  },
-  mainButtonText: {
-    fontSize: FONT_SIZE.body,
-    color: c.accentText,
-    fontFamily: FONT_FAMILY.semiBold,
-  },
-  snoozeButton: {
+  bottomAd: {
     width: '100%',
-    backgroundColor: c.bgSecondary,
-    borderRadius: RADIUS.full,
-    paddingVertical: SPACING.lg,
     alignItems: 'center',
+    marginBottom: 4,
+  },
+  scanPill: {
+    width: '100%',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  scanInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  scanText: {
+    color: AI_YELLOW.onYellow,
+    fontFamily: AI_FONTS.uiSemi,
+    fontSize: 16,
+    letterSpacing: 0.3,
+  },
+  bottomChrome: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  snoozeBtn: {
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: AI_RADIUS.pill,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: AI_CANVAS.hairline,
   },
   snoozeText: {
-    fontSize: FONT_SIZE.caption,
-    color: c.textMuted,
-    fontFamily: FONT_FAMILY.regular,
+    color: AI_TEXT.secondary,
+    fontFamily: AI_FONTS.uiMedium,
+    fontSize: 13,
   },
   noQrHint: {
-    fontSize: FONT_SIZE.labelSmall,
-    color: c.textMuted,
-    fontFamily: FONT_FAMILY.regular,
+    color: AI_TEXT.muted,
+    fontSize: 11,
+    fontFamily: AI_FONTS.ui,
     textAlign: 'center',
-    marginTop: SPACING.xs,
+    marginTop: 8,
   },
 });

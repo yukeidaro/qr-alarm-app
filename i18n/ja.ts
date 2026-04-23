@@ -16,6 +16,7 @@ export const ja = {
   home: {
     qrRegistered: '✓ QR',
     qrRegister: 'QR登録',
+    qrNotSet: '未設定です',
     alarms: 'アラーム',
 
     emptyTitle: '最初のアラームを作成',
@@ -23,11 +24,11 @@ export const ja = {
   },
 
   // Onboarding (modal)
+  // Onboarding (modal)
   onboarding: {
     title: 'QR / バーコードを登録',
-    description: 'アラーム解除に使うQRコードまたはバーコードを登録してください。',
+    description: 'アラーム解除に使うQRコードまたはバーコードを登録してください。歯ブラシ、水のボトル、市販品のバーコードでもOKです。',
     registerNow: '今すぐ登録する',
-    later: 'あとで',
   },
 
   // Onboarding flow
@@ -283,6 +284,59 @@ export const ja = {
     voice_cheerful_en_2: '元気ボイス 2 (英語)',
     voice_cheerful_en_3: '元気ボイス 3 (英語)',
     voice_okiro_ja: '起きろ！ (日本語)',
+  } as Record<string, string>,
+
+  /** Short subtitle shown under each sound name in the picker. */
+  soundDescriptions: {
+    gentle: 'やわらかな目覚め',
+    gentle_chime: '透明感のある鐘の音',
+    gentle_harp: '弦が紡ぐ穏やかな音',
+    gentle_musicbox: '懐かしいメロディ',
+    gentle_delicate: '繊細で静かな響き',
+    gentle_morning_suno: '朝のひかりを思わせる音',
+    gentle_soft: 'ふんわり優しいトーン',
+    nature: '心地よい自然音',
+    nature_birds: '鳥のさえずり・自然',
+    nature_ocean: '波が打ち寄せる音',
+    nature_rain: '雨粒・穏やか',
+    digital: 'シンプルな電子音',
+    digital_beep: 'クリアなビープ音',
+    digital_chiptune: 'レトロゲーム調',
+    digital_synth: 'シンセサウンド',
+    digital_classic_beep: '定番のビープ',
+    digital_morning_beep: '朝向けビープ',
+    digital_robotic: 'ロボット風サウンド',
+    urgent: 'しっかり起こす',
+    loud_alarm: '一般的なアラーム音',
+    loud_buzzer: 'ブザー・強め',
+    loud_siren: 'サイレン・注意喚起',
+    loud_alarm_clock: '懐かしい目覚まし時計',
+    loud_analog_clock: 'アナログ時計の音',
+    loud_classic_alarm: '定番のアラーム',
+    loud_emergency_siren: '緊急車両サイレン',
+    loud_police: 'パトカーのサイレン',
+    loud_crowd_scream: '叫び声・強烈',
+    loud_rock: 'ロック・アップテンポ',
+    loud_siren_long: '長めのサイレン',
+    classical_orchestra: '荘厳なオーケストラ',
+    classical_piano: '澄んだピアノ',
+    classical_violin: '美しいバイオリン',
+    classical_symphony: '壮大なシンフォニー',
+    motivational_energy: '一日を元気にスタート',
+    motivational_inspire: '気持ちが高まる',
+    motivational_upbeat: '明るくテンポ良く',
+    motivational_epic_cinema: '映画のような壮大さ',
+    fun_rooster: '元気なコケコッコー',
+    fun_chicken: 'コケッコケッ',
+    fun_dog_bark: 'ワンちゃんの鳴き声',
+    fun_dog_beg: 'おねだりするワン',
+    voice_akira_ja: '日本語の声で起こす',
+    voice_coach_en_short: '英語コーチ・短め',
+    voice_coach_en_long: '英語コーチ・長め',
+    voice_cheerful_en_1: '英語・明るい1',
+    voice_cheerful_en_2: '英語・明るい2',
+    voice_cheerful_en_3: '英語・明るい3',
+    voice_okiro_ja: '日本語で「起きろ！」',
   } as Record<string, string>,
 
   // Settings

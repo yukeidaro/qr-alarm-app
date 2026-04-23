@@ -1,53 +1,435 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
   Animated,
   Platform,
   Linking,
-  KeyboardAvoidingView,
-  ScrollView,
-  Keyboard,
-  TouchableWithoutFeedback,
+  Dimensions,
   AppState,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
-import { ThemeColors } from '../constants/colors';
-import { useTheme } from '../theme';
-import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
-import { SPACING, SCREEN_PADDING, RADIUS, ACTIVE_OPACITY } from '../constants/spacing';
-import { t } from '../i18n';
-import { Ionicons } from '@expo/vector-icons';
+import { useCameraPermissions } from 'expo-camera';
+import Svg, { Path, Rect, Circle, Line, G, Text as SvgText } from 'react-native-svg';
+import { ACTIVE_OPACITY } from '../constants/spacing';
+import { createAlarm, saveAlarm } from '../services/storageService';
+import { scheduleAlarm } from '../services/alarmService';
+
+// ─── Color Palette (Light theme) ───
+const C = {
+  bg: '#F4F4F5',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F8F8F9',
+  line: '#E5E5E7',
+  lineSoft: '#EDEDEF',
+  ink: '#18181B',
+  ink2: '#52525B',
+  ink3: '#A1A1AA',
+  ink4: '#D4D4D8',
+  orange: '#F85A3E',
+  orangeDim: '#FDE9E4',
+  orangeGlow: 'rgba(248,90,62,0.22)',
+  pickerBg: '#D9D9DC',
+} as const;
+
+// ─── Font Tokens (Inter family) ───
+const F = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semiBold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+} as const;
 
 const ONBOARDING_KEY = '@qralarm/onboarding_done';
 const NAME_KEY = '@qralarm/user_name';
 
-type Step = 'welcome' | 'permissions' | 'focus' | 'ready';
+const { width: SCREEN_W } = Dimensions.get('window');
+
+type Step = 'splash' | 'value1' | 'value2' | 'permissions' | 'firstAlarm' | 'ready';
+
+const ALL_STEPS: Step[] = ['splash', 'value1', 'value2', 'permissions', 'firstAlarm', 'ready'];
+
+// ─────────────────────────────────────────────
+// Shared sub-components
+// ─────────────────────────────────────────────
+
+/** Progress dots */
+function Dots({ current, total }: { current: number; total: number }) {
+  return (
+    <View style={s.dotsRow}>
+      {Array.from({ length: total }).map((_, i) => (
+        <View
+          key={i}
+          style={[
+            s.dot,
+            i === current ? s.dotActive : null,
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+/** Orange pill CTA */
+function PillCTA({
+  label,
+  onPress,
+  ghost = false,
+}: {
+  label: string;
+  onPress: () => void;
+  ghost?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[s.pill, ghost && s.pillGhost]}
+      onPress={onPress}
+      activeOpacity={ACTIVE_OPACITY.default}
+    >
+      <Text style={[s.pillText, ghost && s.pillGhostText]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+/** Skip link */
+function SkipLink({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={ACTIVE_OPACITY.default}>
+      <Text style={s.skipText}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SVG Illustrations
+// ─────────────────────────────────────────────
+
+/** App icon: orange square with clock + QR finder */
+function AppIcon() {
+  return (
+    <View style={s.appIconWrap}>
+      <View style={s.appIconOuter}>
+        <Svg width={48} height={48} viewBox="0 0 48 48">
+          {/* Clock circle */}
+          <Circle cx={24} cy={22} r={14} stroke="#FFF" strokeWidth={2.5} fill="none" />
+          {/* Hour hand */}
+          <Line x1={24} y1={22} x2={24} y2={14} stroke="#FFF" strokeWidth={2.5} strokeLinecap="round" />
+          {/* Minute hand */}
+          <Line x1={24} y1={22} x2={30} y2={22} stroke="#FFF" strokeWidth={2.5} strokeLinecap="round" />
+          {/* QR finder — top-left */}
+          <Path d="M6 14 L6 6 L14 6" stroke="#FFF" strokeWidth={2} fill="none" strokeLinecap="round" />
+          {/* QR finder — top-right */}
+          <Path d="M34 6 L42 6 L42 14" stroke="#FFF" strokeWidth={2} fill="none" strokeLinecap="round" />
+          {/* QR finder — bottom-left */}
+          <Path d="M6 34 L6 42 L14 42" stroke="#FFF" strokeWidth={2} fill="none" strokeLinecap="round" />
+          {/* QR finder — bottom-right */}
+          <Path d="M34 42 L42 42 L42 34" stroke="#FFF" strokeWidth={2} fill="none" strokeLinecap="round" />
+        </Svg>
+      </View>
+    </View>
+  );
+}
+
+/** Value1 illustration: alarm scene comparison */
+function Value1Illustration({ sceneIndex }: { sceneIndex: number }) {
+  // Scene 0: alarm → snooze → fail   Scene 1: alarm → walk to QR → success
+  return (
+    <View style={s.illustrationCard}>
+      <Svg width={280} height={180} viewBox="0 0 280 180">
+        {sceneIndex === 0 ? (
+          <G>
+            {/* Bed icon */}
+            <Rect x={30} y={80} width={80} height={40} rx={8} fill={C.lineSoft} />
+            <Circle cx={50} cy={74} r={12} fill={C.ink4} />
+            {/* Alarm ringing */}
+            <Rect x={140} y={60} width={32} height={36} rx={6} fill={C.orangeDim} stroke={C.orange} strokeWidth={1.5} />
+            <Line x1={156} y1={68} x2={156} y2={80} stroke={C.orange} strokeWidth={2} strokeLinecap="round" />
+            {/* Snooze tap arrow */}
+            <Path d="M172 78 L200 78" stroke={C.ink3} strokeWidth={1.5} strokeDasharray="4 3" />
+            {/* Zzz */}
+            <SvgText x={210} y={76} fill={C.ink3} fontSize={18} fontWeight="bold">Zzz</SvgText>
+            {/* Cross / fail */}
+            <Line x1={120} y1={140} x2={160} y2={160} stroke={C.orange} strokeWidth={2.5} strokeLinecap="round" />
+            <Line x1={160} y1={140} x2={120} y2={160} stroke={C.orange} strokeWidth={2.5} strokeLinecap="round" />
+            <SvgText x={80} y={170} fill={C.ink3} fontSize={11}>Late again...</SvgText>
+          </G>
+        ) : (
+          <G>
+            {/* Person walking */}
+            <Circle cx={60} cy={60} r={10} fill={C.ink4} />
+            <Line x1={60} y1={70} x2={60} y2={100} stroke={C.ink4} strokeWidth={2} />
+            <Line x1={60} y1={100} x2={48} y2={120} stroke={C.ink4} strokeWidth={2} />
+            <Line x1={60} y1={100} x2={72} y2={120} stroke={C.ink4} strokeWidth={2} />
+            {/* Arrow */}
+            <Path d="M80 80 L140 80" stroke={C.orange} strokeWidth={1.5} strokeDasharray="4 3" />
+            <Path d="M135 75 L145 80 L135 85" fill={C.orange} />
+            {/* QR code */}
+            <Rect x={160} y={55} width={50} height={50} rx={8} fill={C.surface} stroke={C.line} strokeWidth={1.5} />
+            <Rect x={168} y={63} width={12} height={12} rx={2} fill={C.ink} />
+            <Rect x={190} y={63} width={12} height={12} rx={2} fill={C.ink} />
+            <Rect x={168} y={85} width={12} height={12} rx={2} fill={C.ink} />
+            <Rect x={190} y={85} width={6} height={6} rx={1} fill={C.ink} />
+            {/* Checkmark */}
+            <Circle cx={185} cy={140} r={16} fill="#E8F5E9" />
+            <Path d="M177 140 L183 146 L195 134" stroke="#4CAF50" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <SvgText x={100} y={170} fill={C.ink2} fontSize={11}>Wide awake!</SvgText>
+          </G>
+        )}
+      </Svg>
+    </View>
+  );
+}
+
+/** Value2 illustration: barcode scan animation */
+function Value2Illustration({ scanProgress }: { scanProgress: Animated.Value }) {
+  const scanY = scanProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [20, 140],
+  });
+
+  return (
+    <View style={s.illustrationCard}>
+      <Svg width={280} height={180} viewBox="0 0 280 180">
+        {/* Corner brackets */}
+        <Path d="M60 30 L60 20 L80 20" stroke={C.orange} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+        <Path d="M200 20 L220 20 L220 30" stroke={C.orange} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+        <Path d="M60 150 L60 160 L80 160" stroke={C.orange} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+        <Path d="M200 160 L220 160 L220 150" stroke={C.orange} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+
+        {/* Barcode lines */}
+        {[80, 88, 94, 102, 108, 118, 124, 130, 140, 146, 154, 162, 170, 178, 186, 194, 200].map(
+          (x, i) => (
+            <Rect
+              key={i}
+              x={x}
+              y={40}
+              width={i % 3 === 0 ? 4 : 2}
+              height={100}
+              fill={C.ink}
+              opacity={0.75}
+            />
+          )
+        )}
+      </Svg>
+      {/* Animated scan line overlay (RN Animated, not SVG) */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          left: 50,
+          width: 180,
+          height: 2,
+          backgroundColor: C.orange,
+          top: scanY,
+          opacity: 0.8,
+          borderRadius: 1,
+        }}
+      />
+    </View>
+  );
+}
+
+/** Permission toggle switch */
+function ToggleSwitch({ on, onPress }: { on: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[s.toggle, on && s.toggleOn]}
+    >
+      <View style={[s.toggleThumb, on && s.toggleThumbOn]} />
+    </TouchableOpacity>
+  );
+}
+
+/** First Alarm — static fisheye time picker (matching design spec) */
+function FisheyeTimePicker({ onConfirm, onClose }: { onConfirm?: () => void; onClose?: () => void }) {
+  // 9 numbers per column, center at index 4
+  const hourCenter = 7; // shows 03..07..11
+  const minuteCenter = 45; // shows 41..45..49
+  const COUNT = 9;
+
+  // Font size / opacity profile matching design spec
+  const sizes =   [24, 32, 44, 56, 76, 56, 44, 32, 24];
+  const alphas =  [0.15, 0.25, 0.40, 0.65, 1, 0.65, 0.40, 0.25, 0.15];
+
+  const renderColumn = (center: number, pad: boolean = false) => (
+    <View style={s.pickerColumn}>
+      {Array.from({ length: COUNT }).map((_, i) => {
+        const val = center + (i - 4);
+        const fontSize = sizes[i];
+        const opacity = alphas[i];
+        const isCenter = i === 4;
+        const label = pad ? String(val).padStart(2, '0') : String(val);
+        return (
+          <Text
+            key={i}
+            style={[
+              s.pickerNumber,
+              {
+                fontSize,
+                opacity,
+                lineHeight: fontSize + 8,
+                fontFamily: isCenter ? F.bold : F.semiBold,
+                letterSpacing: isCenter ? -2 : -1,
+              },
+            ]}
+          >
+            {label}
+          </Text>
+        );
+      })}
+    </View>
+  );
+
+  return (
+    <View style={s.pickerContainer}>
+      <View style={s.pickerInner}>
+        {/* Hours */}
+        {renderColumn(hourCenter)}
+
+        {/* )( SVG bezier curves */}
+        <View style={s.pickerCurvesWrap}>
+          <Svg width={50} height={340} viewBox="0 0 50 340">
+            {/* ) curve — bows right */}
+            <Path
+              d="M5 0 C28 113 28 227 5 340"
+              stroke={C.orange}
+              strokeWidth={2}
+              fill="none"
+              opacity={0.65}
+            />
+            {/* ( curve — bows left */}
+            <Path
+              d="M45 0 C22 113 22 227 45 340"
+              stroke={C.orange}
+              strokeWidth={2}
+              fill="none"
+              opacity={0.65}
+            />
+          </Svg>
+        </View>
+
+        {/* Minutes */}
+        {renderColumn(minuteCenter, true)}
+      </View>
+
+      {/* Action icons row — Sound / Snooze / Repeat / QR */}
+      <View style={s.pickerActionsRow}>
+        <View style={s.pickerAction}>
+          <Svg width={22} height={22} viewBox="0 0 24 24">
+            <Path d="M9 18V6l10-2v12" stroke={C.ink} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <Circle cx={6} cy={18} r={3} stroke={C.ink} strokeWidth={2} fill="none" />
+            <Circle cx={16} cy={16} r={3} stroke={C.ink} strokeWidth={2} fill="none" />
+          </Svg>
+          <Text style={s.pickerActionLabel}>Sound</Text>
+        </View>
+        <View style={s.pickerAction}>
+          <Svg width={22} height={22} viewBox="0 0 24 24">
+            <Circle cx={12} cy={13} r={8} stroke={C.ink} strokeWidth={2} fill="none" />
+            <Path d="M12 9v4l3 2" stroke={C.ink} strokeWidth={2} fill="none" strokeLinecap="round" />
+            <Path d="M4 5l3-2M20 5l-3-2" stroke={C.ink} strokeWidth={2} fill="none" strokeLinecap="round" />
+          </Svg>
+          <Text style={s.pickerActionLabel}>Snooze</Text>
+        </View>
+        <View style={s.pickerAction}>
+          <Svg width={22} height={22} viewBox="0 0 24 24">
+            <Path d="M4 7h13l-3-3M20 17H7l3 3" stroke={C.ink} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+          <Text style={s.pickerActionLabel}>Repeat</Text>
+        </View>
+        {/* QR code action — required, highlighted in orange */}
+        <View style={s.pickerAction}>
+          <View style={{ position: 'relative' }}>
+            {/* Required dot badge */}
+            <View style={s.pickerQrBadge} />
+            <Svg width={22} height={22} viewBox="0 0 24 24">
+              <Rect x={2} y={2} width={8} height={8} rx={1.5} stroke={C.orange} strokeWidth={2} fill="none" />
+              <Rect x={14} y={2} width={8} height={8} rx={1.5} stroke={C.orange} strokeWidth={2} fill="none" />
+              <Rect x={2} y={14} width={8} height={8} rx={1.5} stroke={C.orange} strokeWidth={2} fill="none" />
+              <Rect x={4.5} y={4.5} width={3} height={3} rx={0.5} fill={C.orange} />
+              <Rect x={16.5} y={4.5} width={3} height={3} rx={0.5} fill={C.orange} />
+              <Rect x={4.5} y={16.5} width={3} height={3} rx={0.5} fill={C.orange} />
+              <Rect x={16.5} y={16.5} width={2} height={2} rx={0.4} fill={C.orange} />
+              <Rect x={20.5} y={16.5} width={2} height={2} rx={0.4} fill={C.orange} />
+              <Rect x={16.5} y={20.5} width={2} height={2} rx={0.4} fill={C.orange} />
+            </Svg>
+          </View>
+          <Text style={[s.pickerActionLabel, { color: C.orange, fontFamily: F.bold }]}>
+            {'\u30B3\u30FC\u30C9\u8A2D\u5B9A'}
+          </Text>
+        </View>
+      </View>
+
+      {/* QR warning banner */}
+      <View style={s.pickerWarning}>
+        <Svg width={14} height={14} viewBox="0 0 14 14">
+          <Circle cx={7} cy={7} r={6} stroke={C.orange} strokeWidth={1.4} fill="none" />
+          <Path d="M7 4v3.5M7 9.5v.5" stroke={C.orange} strokeWidth={1.6} strokeLinecap="round" fill="none" />
+        </Svg>
+        <Text style={s.pickerWarningText}>
+          QR{'\u30B3\u30FC\u30C9\u3092\u8A2D\u5B9A\u3057\u306A\u3044\u3068\u30A2\u30E9\u30FC\u30E0\u306F\u6A5F\u80FD\u3057\u307E\u305B\u3093'}
+        </Text>
+      </View>
+
+      {/* Footer bar — X / Choose time / checkmark */}
+      <View style={s.pickerFooter}>
+        <TouchableOpacity
+          style={s.pickerFooterClose}
+          onPress={onClose}
+          activeOpacity={ACTIVE_OPACITY.default}
+        >
+          <Svg width={18} height={18} viewBox="0 0 18 18">
+            <Line x1={3} y1={3} x2={15} y2={15} stroke={C.ink2} strokeWidth={2} strokeLinecap="round" />
+            <Line x1={15} y1={3} x2={3} y2={15} stroke={C.ink2} strokeWidth={2} strokeLinecap="round" />
+          </Svg>
+        </TouchableOpacity>
+        <Text style={s.pickerFooterLabel}>Choose time</Text>
+        <TouchableOpacity
+          style={s.pickerFooterCheck}
+          onPress={onConfirm}
+          activeOpacity={ACTIVE_OPACITY.default}
+        >
+          <Svg width={18} height={18} viewBox="0 0 18 18">
+            <Path d="M3 9l4 4 8-9" stroke="#FFF" strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Main Screen
+// ─────────────────────────────────────────────
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [step, setStep] = useState<Step>('welcome');
-  const [name, setName] = useState('');
+  const [step, setStep] = useState<Step>('splash');
   const [notifGranted, setNotifGranted] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraGranted = cameraPermission?.granted ?? false;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  // Value1 scene alternation (8s loop)
+  const [sceneIndex, setSceneIndex] = useState(0);
+
+  // Value2 scan line animation (4s loop)
+  const scanProgress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    animateIn();
-    // Check current notification permission status on mount
+    setTimeout(() => animateIn(), 100);
+    // Check existing notification permission
     Notifications.getPermissionsAsync().then(({ status }) => {
       if (status === 'granted') setNotifGranted(true);
     });
 
-    // Re-check when user returns from Settings app
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         Notifications.getPermissionsAsync().then(({ status }) => {
@@ -58,67 +440,109 @@ export default function OnboardingScreen() {
     return () => subscription.remove();
   }, []);
 
+  // Value1: alternate scenes every 4s
+  useEffect(() => {
+    if (step !== 'value1') return;
+    const interval = setInterval(() => {
+      setSceneIndex((prev) => (prev === 0 ? 1 : 0));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [step]);
+
+  // Value2: scan line loop
+  useEffect(() => {
+    if (step !== 'value2') return;
+    let cancelled = false;
+    const loop = () => {
+      if (cancelled) return;
+      scanProgress.setValue(0);
+      Animated.timing(scanProgress, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: false,
+      }).start(({ finished }) => {
+        if (finished && !cancelled) loop();
+      });
+    };
+    loop();
+    return () => {
+      cancelled = true;
+      scanProgress.stopAnimation();
+    };
+  }, [step]);
+
+  // Auto-request notifications when entering permissions step
+  useEffect(() => {
+    if (step !== 'permissions') return;
+    const autoRequest = async () => {
+      try {
+        const { status: current } = await Notifications.getPermissionsAsync();
+        if (current === 'granted') {
+          setNotifGranted(true);
+          return;
+        }
+        setTimeout(async () => {
+          try {
+            const { status } = await Notifications.requestPermissionsAsync();
+            setNotifGranted(status === 'granted');
+          } catch {}
+        }, 600);
+      } catch {}
+    };
+    autoRequest();
+  }, [step]);
+
   const animateIn = () => {
     fadeAnim.setValue(0);
-    slideAnim.setValue(30);
+    slideAnim.setValue(20);
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start();
   };
 
   const goToStep = (next: Step) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
       setStep(next);
-      animateIn();
+      setTimeout(() => animateIn(), 50);
     });
   };
 
-  const handleNameDone = async () => {
-    if (name.trim()) {
-      await AsyncStorage.setItem(NAME_KEY, name.trim());
-    }
-    goToStep('permissions');
-  };
-
   const handleRequestNotifications = async () => {
-    // Check current status first
-    const { status: currentStatus } = await Notifications.getPermissionsAsync();
-
-    if (currentStatus === 'granted') {
-      setNotifGranted(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      return;
-    }
-
-    if (currentStatus === 'undetermined') {
-      // First time — show system permission dialog
-      const { status } = await Notifications.requestPermissionsAsync();
-      const granted = status === 'granted';
-      setNotifGranted(granted);
-      Haptics.notificationAsync(
-        granted ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
-      );
-      return;
-    }
-
-    // Status is 'denied' — system dialog won't show again, open Settings
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    if (Platform.OS === 'ios') {
-      Linking.openURL('app-settings:');
-    } else {
-      Linking.openSettings();
-    }
-  };
-
-  const handleOpenFocusSettings = async () => {
-    // App-Prefs:FOCUS はプライベートAPIでApp Storeリジェクトされるため使用禁止
-    // ScanAlarmのアプリ設定を開き、テキストで手順案内する
-    if (Platform.OS === 'ios') {
-      Linking.openURL('app-settings:');
-    } else {
-      Linking.openSettings();
+    try {
+      const { status: currentStatus } = await Notifications.getPermissionsAsync();
+      if (currentStatus === 'granted') {
+        setNotifGranted(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        return;
+      }
+      if (currentStatus === 'undetermined') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        const granted = status === 'granted';
+        setNotifGranted(granted);
+        Haptics.notificationAsync(
+          granted ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
+        );
+        return;
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      if (Platform.OS === 'ios') {
+        Linking.openURL('app-settings:');
+      } else {
+        Linking.openSettings();
+      }
+    } catch {
+      try {
+        const { status } = await Notifications.requestPermissionsAsync();
+        setNotifGranted(status === 'granted');
+      } catch {
+        if (Platform.OS === 'ios') {
+          Linking.openURL('app-settings:');
+        } else {
+          Linking.openSettings();
+        }
+      }
     }
   };
 
@@ -128,464 +552,593 @@ export default function OnboardingScreen() {
     router.replace('/');
   };
 
-  const renderWelcome = () => (
-    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <Text style={styles.stepEmoji}>{'  '}</Text>
-      <Text style={styles.title}>{t.onboardingFlow.welcomeTitle}</Text>
-      <Text style={styles.subtitle}>{t.onboardingFlow.welcomeSubtitle}</Text>
+  const stepIndex = ALL_STEPS.indexOf(step);
 
-      {/* App description */}
-      <View style={styles.descriptionCard}>
-        <Text style={styles.descriptionText}>{t.onboardingFlow.appDescription}</Text>
+  // Determine dot count per screen
+  const getDots = (): { total: number; active: number } | null => {
+    if (step === 'splash') return { total: 3, active: 0 };
+    if (step === 'value1') return { total: 4, active: 0 };
+    if (step === 'value2') return { total: 4, active: 1 };
+    if (step === 'permissions') return { total: 4, active: 2 };
+    if (step === 'firstAlarm') return { total: 4, active: 3 };
+    return null; // ready has no dots
+  };
+  const dots = getDots();
+
+  // ─── Render each step ───
+
+  const renderSplash = () => (
+    <Animated.View style={[s.center, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <AppIcon />
+        <Text style={s.splashTitle}>ScanAlarm</Text>
+        <Text style={s.splashSub}>Wake up. For real.</Text>
       </View>
-
-      <View style={styles.inputCard}>
-        <Text style={styles.inputLabel}>{t.onboardingFlow.nameLabel}</Text>
-        <TextInput
-          style={styles.textInput}
-          value={name}
-          onChangeText={setName}
-          placeholder={t.onboardingFlow.namePlaceholder}
-          placeholderTextColor={colors.textMuted}
-          autoFocus={false}
-          returnKeyType="done"
-          onSubmitEditing={handleNameDone}
-        />
+      <View style={s.bottomArea}>
+        {dots && <Dots current={dots.active} total={dots.total} />}
+        <PillCTA label="Get started" onPress={() => goToStep('value1')} />
       </View>
+    </Animated.View>
+  );
 
-      <TouchableOpacity style={styles.primaryButton} onPress={handleNameDone} activeOpacity={ACTIVE_OPACITY.default}>
-        <Text style={styles.primaryButtonText}>{t.onboardingFlow.next}</Text>
-      </TouchableOpacity>
+  const renderValue1 = () => (
+    <Animated.View style={[s.stepWrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <Value1Illustration sceneIndex={sceneIndex} />
+      <View style={s.copyBlock}>
+        <Text style={s.heading}>Wake up. For real.</Text>
+        <Text style={s.body}>
+          This alarm won't stop until you scan a barcode. Place it somewhere
+          you have to walk to — you'll never oversleep again.
+        </Text>
+      </View>
+      <View style={s.bottomArea}>
+        {dots && <Dots current={dots.active} total={dots.total} />}
+        <PillCTA label="Continue" onPress={() => goToStep('value2')} />
+        <SkipLink label="Skip" onPress={() => goToStep('permissions')} />
+      </View>
+    </Animated.View>
+  );
+
+  const renderValue2 = () => (
+    <Animated.View style={[s.stepWrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <Value2Illustration scanProgress={scanProgress} />
+      <View style={s.copyBlock}>
+        <Text style={s.heading}>Scan to dismiss</Text>
+        <Text style={s.body}>
+          Any barcode works — the one on your toothpaste, a cereal box, or a
+          water bottle. No special QR code needed.
+        </Text>
+      </View>
+      <View style={s.bottomArea}>
+        {dots && <Dots current={dots.active} total={dots.total} />}
+        <PillCTA label="Continue" onPress={() => goToStep('permissions')} />
+        <SkipLink label="Skip" onPress={() => goToStep('permissions')} />
+      </View>
     </Animated.View>
   );
 
   const renderPermissions = () => (
-    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <Text style={styles.stepEmoji}>{'  '}</Text>
-      <Text style={styles.title}>{t.onboardingFlow.permissionsTitle}</Text>
-      <Text style={styles.subtitle}>{t.onboardingFlow.permissionsSubtitle}</Text>
-
-      {/* Notification permission */}
-      <View style={styles.permissionCard}>
-        <View style={styles.permissionRow}>
-          <View style={styles.permissionInfo}>
-            <Text style={styles.permissionTitle}>{t.onboardingFlow.notificationTitle}</Text>
-            <Text style={styles.permissionDesc}>{t.onboardingFlow.notificationDesc}</Text>
-          </View>
-          {notifGranted ? (
-            <View style={styles.grantedBadge}>
-              <Text style={styles.grantedText}>OK</Text>
-            </View>
-          ) : (
-            <TouchableOpacity style={styles.grantButton} onPress={handleRequestNotifications} activeOpacity={ACTIVE_OPACITY.default}>
-              <Text style={styles.grantButtonText}>{t.onboardingFlow.allow}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Sound settings tip */}
-      <View style={styles.tipCard}>
-        <Text style={styles.tipTitle}>{t.onboardingFlow.soundTipTitle}</Text>
-        <Text style={styles.tipDesc}>{t.onboardingFlow.soundTipDesc}</Text>
-        {Platform.OS === 'android' && (
-          <TouchableOpacity onPress={() => Linking.openSettings()} activeOpacity={ACTIVE_OPACITY.default}>
-            <Text style={styles.tipLink}>{t.onboardingFlow.openSettings}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Focus Mode tip (iOS only) — now has dedicated step */}
-
-      <TouchableOpacity
-        style={[styles.primaryButton, !notifGranted && styles.primaryButtonDisabled]}
-        onPress={() => {
-          if (notifGranted) goToStep(Platform.OS === 'ios' ? 'focus' : 'ready');
-        }}
-        activeOpacity={notifGranted ? ACTIVE_OPACITY.default : 1}
-      >
-        <Text style={[styles.primaryButtonText, !notifGranted && styles.primaryButtonTextDisabled]}>
-          {notifGranted ? t.onboardingFlow.next : t.onboardingFlow.enableNotificationFirst}
+    <Animated.View style={[s.stepWrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <View style={s.copyBlock}>
+        <Text style={s.heading}>A couple permissions</Text>
+        <Text style={s.body}>
+          So alarms can ring and you can scan QR codes.
         </Text>
-      </TouchableOpacity>
+      </View>
+
+      {/* Notification permission card */}
+      <View style={s.permCard}>
+        <View style={s.permLeft}>
+          <View style={s.permIcon}>
+            <Svg width={22} height={22} viewBox="0 0 24 24">
+              <Path
+                d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
+                stroke={C.orange}
+                strokeWidth={2}
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </View>
+          <View style={s.permText}>
+            <Text style={s.permTitle}>Notifications</Text>
+            <Text style={s.permDesc}>Required for alarm to sound on time.</Text>
+          </View>
+        </View>
+        <ToggleSwitch on={notifGranted} onPress={handleRequestNotifications} />
+      </View>
+
+      {/* Camera permission card */}
+      <View style={s.permCard}>
+        <View style={s.permLeft}>
+          <View style={s.permIcon}>
+            <Svg width={22} height={22} viewBox="0 0 24 24">
+              <Path
+                d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+                stroke={C.orange}
+                strokeWidth={2}
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Circle cx={12} cy={13} r={4} stroke={C.orange} strokeWidth={2} fill="none" />
+            </Svg>
+          </View>
+          <View style={s.permText}>
+            <Text style={s.permTitle}>Camera</Text>
+            <Text style={s.permDesc}>Needed to scan barcodes and QR codes.</Text>
+          </View>
+        </View>
+        <ToggleSwitch
+          on={cameraGranted}
+          onPress={async () => {
+            if (cameraGranted) return;
+            try {
+              const result = await requestCameraPermission();
+              Haptics.notificationAsync(
+                result.granted
+                  ? Haptics.NotificationFeedbackType.Success
+                  : Haptics.NotificationFeedbackType.Warning
+              );
+              // If denied and can't ask again, open settings
+              if (!result.granted && !result.canAskAgain) {
+                Platform.OS === 'ios' ? Linking.openURL('app-settings:') : Linking.openSettings();
+              }
+            } catch {
+              // Silently fail
+            }
+          }}
+        />
+      </View>
+
+      <View style={s.bottomArea}>
+        {dots && <Dots current={dots.active} total={dots.total} />}
+        <PillCTA
+          label="Allow & Continue"
+          onPress={() => goToStep('firstAlarm')}
+        />
+        <SkipLink label="Not now" onPress={() => goToStep('firstAlarm')} />
+      </View>
     </Animated.View>
   );
 
-  const renderFocusStep = () => (
-    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <Ionicons name="moon-outline" size={48} color={colors.accent} style={{ marginBottom: SPACING.xl }} />
-      <Text style={styles.title}>{t.onboardingFlow.focusSleepTitle}</Text>
-      <Text style={styles.subtitle}>{t.onboardingFlow.focusSleepDesc}</Text>
-
-      {/* Step-by-step guide */}
-      <View style={styles.guideCard}>
-        <View style={styles.guideStep}>
-          <View style={styles.guideStepNumber}>
-            <Text style={styles.guideStepNumberText}>1</Text>
-          </View>
-          <Text style={styles.guideStepText}>{t.onboardingFlow.focusGuideStep1}</Text>
-        </View>
-        <View style={styles.guideStep}>
-          <View style={styles.guideStepNumber}>
-            <Text style={styles.guideStepNumberText}>2</Text>
-          </View>
-          <Text style={styles.guideStepText}>{t.onboardingFlow.focusGuideStep2}</Text>
-        </View>
-        <View style={styles.guideStep}>
-          <View style={styles.guideStepNumber}>
-            <Text style={styles.guideStepNumberText}>3</Text>
-          </View>
-          <Text style={styles.guideStepText}>{t.onboardingFlow.focusGuideStep3}</Text>
-        </View>
-      </View>
-
-      {/* Open ScanAlarm Settings button */}
-      <TouchableOpacity style={styles.focusSettingsButton} onPress={handleOpenFocusSettings} activeOpacity={ACTIVE_OPACITY.default}>
-        <Ionicons name="settings-outline" size={18} color={colors.accentText} />
-        <Text style={styles.focusSettingsButtonText}>{t.onboardingFlow.openFocusSettings}</Text>
-      </TouchableOpacity>
-
-      {/* Next button */}
-      <TouchableOpacity style={styles.primaryButton} onPress={() => goToStep('ready')} activeOpacity={ACTIVE_OPACITY.default}>
-        <Text style={styles.primaryButtonText}>{t.onboardingFlow.next}</Text>
-      </TouchableOpacity>
+  const renderFirstAlarm = () => (
+    <Animated.View style={[s.firstAlarmWrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <FisheyeTimePicker
+        onClose={() => goToStep('ready')}
+        onConfirm={async () => {
+          try {
+            const alarm = createAlarm();
+            alarm.hour = 7;
+            alarm.minute = 45;
+            alarm.enabled = true;
+            alarm.repeatDays = [1, 2, 3, 4, 5]; // Mon-Fri
+            await saveAlarm(alarm);
+            await scheduleAlarm(alarm);
+          } catch {}
+          goToStep('ready');
+        }}
+      />
     </Animated.View>
   );
 
   const renderReady = () => (
-    <Animated.View style={[styles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <Text style={styles.stepEmoji}>{'  '}</Text>
-      <Text style={styles.title}>{t.onboardingFlow.readyTitle}</Text>
-      <Text style={styles.subtitle}>
-        {name.trim()
-          ? t.onboardingFlow.readySubtitleName(name.trim())
-          : t.onboardingFlow.readySubtitle}
-      </Text>
-
-      <View style={styles.checklistCard}>
-        <View style={styles.checkItem}>
-          <Text style={styles.checkIcon}>{'*'}</Text>
-          <Text style={styles.checkText}>{t.onboardingFlow.tipQr}</Text>
+    <Animated.View style={[s.center, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        {/* Triple-glow checkmark circle */}
+        <View style={s.readyGlow3}>
+          <View style={s.readyGlow2}>
+            <View style={s.readyGlow1}>
+              <View style={s.readyCircle}>
+                <Svg width={44} height={44} viewBox="0 0 24 24">
+                  <Path
+                    d="M5 12l5 5L19 7"
+                    stroke="#FFF"
+                    strokeWidth={3}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </View>
+            </View>
+          </View>
         </View>
-        <View style={styles.checkItem}>
-          <Text style={styles.checkIcon}>{'*'}</Text>
-          <Text style={styles.checkText}>{t.onboardingFlow.tipSound}</Text>
-        </View>
-        <View style={styles.checkItem}>
-          <Text style={styles.checkIcon}>{'*'}</Text>
-          <Text style={styles.checkText}>{t.onboardingFlow.tipSnooze}</Text>
-        </View>
+        <Text style={s.readyTitle}>You're all set</Text>
+        <Text style={s.readyBody}>
+          Your first alarm is ready for tomorrow at 7:45 AM.{'\n'}Sweet dreams.
+        </Text>
       </View>
-
-      <TouchableOpacity style={styles.primaryButton} onPress={handleFinish} activeOpacity={ACTIVE_OPACITY.default}>
-        <Text style={styles.primaryButtonText}>{t.onboardingFlow.start}</Text>
-      </TouchableOpacity>
+      <View style={s.bottomArea}>
+        <PillCTA label="Let's go \u2192" onPress={handleFinish} />
+      </View>
     </Animated.View>
   );
 
-  // Step indicator — iOS has an extra Focus step
-  const steps: Step[] = Platform.OS === 'ios'
-    ? ['welcome', 'permissions', 'focus', 'ready']
-    : ['welcome', 'permissions', 'ready'];
-  const currentIndex = steps.indexOf(step);
-
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {/* Step dots */}
-      <View style={styles.dotsRow}>
-        {steps.map((s, i) => (
-          <View key={s} style={[styles.dot, i === currentIndex && styles.dotActive]} />
-        ))}
-      </View>
-
-      {/* Content */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {step === 'welcome' && renderWelcome()}
-          {step === 'permissions' && renderPermissions()}
-          {step === 'focus' && renderFocusStep()}
-          {step === 'ready' && renderReady()}
-        </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+    <View style={[s.screen, step === 'firstAlarm' && { backgroundColor: C.pickerBg }]}>
+      <StatusBar style="dark" />
+      {step === 'splash' && renderSplash()}
+      {step === 'value1' && renderValue1()}
+      {step === 'value2' && renderValue2()}
+      {step === 'permissions' && renderPermissions()}
+      {step === 'firstAlarm' && renderFirstAlarm()}
+      {step === 'ready' && renderReady()}
+    </View>
   );
 }
 
-const makeStyles = (c: ThemeColors) => StyleSheet.create({
+// ─────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────
+
+const s = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: c.bgPrimary,
-  },
-  scrollContent: {
-    flexGrow: 1,
+    backgroundColor: C.bg,
   },
 
-  // Dots
+  // Layout wrappers
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 80,
+    paddingBottom: 48,
+  },
+  stepWrap: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingTop: 80,
+    paddingBottom: 48,
+  },
+  firstAlarmWrap: {
+    flex: 1,
+    paddingTop: 54,
+  },
+
+  // ─── Dots ───
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: SPACING.sm,
-    paddingTop: SPACING['7xl'],
-    marginBottom: SPACING.xl,
+    gap: 6,
+    marginBottom: 24,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: c.bgTertiary,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: C.ink4,
   },
   dotActive: {
-    backgroundColor: c.accent,
-    width: 24,
+    width: 22,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: C.orange,
   },
 
-  // Step
-  stepContainer: {
-    flex: 1,
-    paddingHorizontal: SCREEN_PADDING.horizontal,
+  // ─── Pill CTA ───
+  pill: {
+    width: '100%',
+    height: 56,
+    borderRadius: 9999,
+    backgroundColor: C.orange,
     alignItems: 'center',
-    paddingTop: SPACING['5xl'],
+    justifyContent: 'center',
+    shadowColor: C.orange,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  stepEmoji: {
-    fontSize: 48,
-    marginBottom: SPACING.xl,
+  pillText: {
+    fontSize: 17,
+    fontFamily: F.semiBold,
+    color: '#FFF',
   },
-  title: {
-    fontSize: FONT_SIZE.heading2,
-    fontFamily: FONT_FAMILY.bold,
-    color: c.textPrimary,
-    textAlign: 'center',
-    marginBottom: SPACING.base,
+  pillGhost: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: C.line,
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  subtitle: {
-    fontSize: FONT_SIZE.bodySmall,
-    fontFamily: FONT_FAMILY.regular,
-    color: c.textMuted,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: SPACING.xxl,
-  },
-  descriptionCard: {
-    width: '100%',
-    backgroundColor: c.bgSecondary,
-    borderRadius: RADIUS.base,
-    padding: SPACING.lg,
-    marginBottom: SPACING['4xl'],
-  },
-  descriptionText: {
-    fontSize: FONT_SIZE.bodySmall,
-    fontFamily: FONT_FAMILY.regular,
-    color: c.textSecondary,
-    lineHeight: 22,
-    textAlign: 'center',
+  pillGhostText: {
+    color: C.ink2,
   },
 
-  // Name input
-  inputCard: {
-    width: '100%',
-    backgroundColor: c.bgSecondary,
-    borderRadius: RADIUS.base,
-    padding: SPACING.xl,
-    marginBottom: SPACING.xxl,
-  },
-  inputLabel: {
-    fontSize: FONT_SIZE.labelSmall,
-    fontFamily: FONT_FAMILY.medium,
-    color: c.textMuted,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: SPACING.sm,
-  },
-  textInput: {
-    fontSize: FONT_SIZE.heading3,
-    fontFamily: FONT_FAMILY.semiBold,
-    color: c.textPrimary,
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 2,
-    borderBottomColor: c.accent,
+  // ─── Skip ───
+  skipText: {
+    fontSize: 14,
+    fontFamily: F.medium,
+    color: C.ink3,
+    marginTop: 16,
   },
 
-  // Buttons
-  primaryButton: {
+  // ─── Bottom area ───
+  bottomArea: {
     width: '100%',
-    backgroundColor: c.accent,
-    paddingVertical: SPACING.lg,
-    borderRadius: RADIUS.full,
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    paddingBottom: 8,
   },
-  primaryButtonText: {
-    fontSize: FONT_SIZE.body,
-    fontFamily: FONT_FAMILY.semiBold,
-    color: c.accentText,
+
+  // ─── Splash ───
+  appIconWrap: {
+    marginBottom: 24,
+    shadowColor: C.orange,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  primaryButtonDisabled: {
-    backgroundColor: c.bgTertiary,
-    opacity: 0.6,
+  appIconOuter: {
+    width: 96,
+    height: 96,
+    borderRadius: 22,
+    backgroundColor: C.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryButtonTextDisabled: {
-    color: c.textMuted,
+  splashTitle: {
+    fontSize: 28,
+    fontFamily: F.bold,
+    color: C.ink,
+    marginBottom: 6,
   },
-  // Permission card
-  permissionCard: {
+  splashSub: {
+    fontSize: 14,
+    fontFamily: F.regular,
+    color: C.ink3,
+  },
+
+  // ─── Value props ───
+  illustrationCard: {
     width: '100%',
-    backgroundColor: c.bgSecondary,
-    borderRadius: RADIUS.base,
-    padding: SPACING.xl,
-    marginBottom: SPACING.lg,
+    backgroundColor: C.surface,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: C.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    marginBottom: 32,
+    overflow: 'hidden',
   },
-  permissionRow: {
+  copyBlock: {
+    marginBottom: 32,
+  },
+  heading: {
+    fontSize: 28,
+    fontFamily: F.bold,
+    color: C.ink,
+    marginBottom: 10,
+  },
+  body: {
+    fontSize: 15,
+    fontFamily: F.regular,
+    color: C.ink2,
+    lineHeight: 22,
+  },
+
+  // ─── Permissions ───
+  permCard: {
+    width: '100%',
+    backgroundColor: C.surface,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: C.line,
+    padding: 20,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  permissionInfo: {
-    flex: 1,
-    marginRight: SPACING.lg,
-  },
-  permissionTitle: {
-    fontSize: FONT_SIZE.bodySmall,
-    fontFamily: FONT_FAMILY.semiBold,
-    color: c.textPrimary,
-    marginBottom: SPACING.xxs,
-  },
-  permissionDesc: {
-    fontSize: FONT_SIZE.label,
-    fontFamily: FONT_FAMILY.regular,
-    color: c.textMuted,
-    lineHeight: 18,
-  },
-  grantButton: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.full,
-    backgroundColor: c.accent,
-  },
-  grantButtonText: {
-    fontSize: FONT_SIZE.label,
-    fontFamily: FONT_FAMILY.semiBold,
-    color: c.accentText,
-  },
-  grantedBadge: {
-    paddingHorizontal: SPACING.base,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.full,
-    backgroundColor: c.overlay.accent10,
-  },
-  grantedText: {
-    fontSize: FONT_SIZE.label,
-    fontFamily: FONT_FAMILY.semiBold,
-    color: c.accentSubtle,
-  },
-
-  // Tip card
-  tipCard: {
-    width: '100%',
-    backgroundColor: c.bgSecondary,
-    borderRadius: RADIUS.base,
-    padding: SPACING.xl,
-    marginBottom: SPACING.xxl,
-  },
-  tipTitle: {
-    fontSize: FONT_SIZE.bodySmall,
-    fontFamily: FONT_FAMILY.semiBold,
-    color: c.textPrimary,
-    marginBottom: SPACING.xs,
-  },
-  tipDesc: {
-    fontSize: FONT_SIZE.label,
-    fontFamily: FONT_FAMILY.regular,
-    color: c.textMuted,
-    lineHeight: 18,
-  },
-  tipLink: {
-    fontSize: FONT_SIZE.label,
-    fontFamily: FONT_FAMILY.medium,
-    color: c.accentSubtle,
-    marginTop: SPACING.sm,
-  },
-
-  // Checklist
-  checklistCard: {
-    width: '100%',
-    backgroundColor: c.bgSecondary,
-    borderRadius: RADIUS.base,
-    padding: SPACING.xl,
-    marginBottom: SPACING.xxl,
-    gap: SPACING.lg,
-  },
-  checkItem: {
+  permLeft: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: SPACING.base,
-  },
-  checkIcon: {
-    fontSize: FONT_SIZE.bodySmall,
-    color: c.accent,
-    fontFamily: FONT_FAMILY.bold,
-    marginTop: 1,
-  },
-  checkText: {
+    alignItems: 'center',
     flex: 1,
-    fontSize: FONT_SIZE.bodySmall,
-    fontFamily: FONT_FAMILY.regular,
-    color: c.textSecondary,
-    lineHeight: 22,
+  },
+  permIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: C.orangeDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  permText: {
+    flex: 1,
+  },
+  permTitle: {
+    fontSize: 15,
+    fontFamily: F.semiBold,
+    color: C.ink,
+    marginBottom: 2,
+  },
+  permDesc: {
+    fontSize: 13,
+    fontFamily: F.regular,
+    color: C.ink3,
+    lineHeight: 17,
   },
 
-  // Focus/Sleep guide step
-  guideCard: {
+  // Toggle
+  toggle: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: C.ink4,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  toggleOn: {
+    backgroundColor: C.orange,
+  },
+  toggleThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+  },
+  toggleThumbOn: {
+    alignSelf: 'flex-end',
+  },
+
+  // ─── Time Picker ───
+  pickerContainer: {
+    flex: 1,
     width: '100%',
-    backgroundColor: c.bgSecondary,
-    borderRadius: RADIUS.base,
-    padding: SPACING.xl,
-    marginBottom: SPACING.xxl,
-    gap: SPACING.lg,
-  },
-  guideStep: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: SPACING.base,
-  },
-  guideStepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: c.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  guideStepNumberText: {
-    fontSize: FONT_SIZE.label,
-    fontFamily: FONT_FAMILY.bold,
-    color: c.accentText,
-  },
-  guideStepText: {
-    flex: 1,
-    fontSize: FONT_SIZE.bodySmall,
-    fontFamily: FONT_FAMILY.regular,
-    color: c.textSecondary,
-    lineHeight: 22,
-    paddingTop: 3,
-  },
-  focusSettingsButton: {
-    width: '100%',
+  pickerInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: SPACING.sm,
-    backgroundColor: c.accent,
-    paddingVertical: SPACING.lg,
-    borderRadius: RADIUS.full,
-    marginBottom: SPACING.lg,
+    marginBottom: 20,
   },
-  focusSettingsButtonText: {
-    fontSize: FONT_SIZE.body,
-    fontFamily: FONT_FAMILY.semiBold,
-    color: c.accentText,
+  pickerColumn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 110,
+  },
+  pickerNumber: {
+    color: C.ink,
+    textAlign: 'center',
+  },
+  pickerCurvesWrap: {
+    width: 50,
+    height: 340,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+    paddingHorizontal: 24,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(24,24,27,0.08)',
+    paddingTop: 20,
+  },
+  pickerAction: {
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  pickerActionLabel: {
+    fontSize: 13,
+    fontFamily: F.semiBold,
+    color: C.ink,
+    letterSpacing: -0.2,
+  },
+  pickerQrBadge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.orange,
+    zIndex: 1,
+  },
+  pickerWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: C.orangeDim,
+    borderWidth: 1,
+    borderColor: 'rgba(248,90,62,0.2)',
+  },
+  pickerWarningText: {
+    fontSize: 12,
+    fontFamily: F.semiBold,
+    color: '#7A2512',
+    flex: 1,
+  },
+  pickerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 22,
+    paddingBottom: 8,
+  },
+  pickerFooterClose: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerFooterLabel: {
+    fontSize: 14,
+    fontFamily: F.medium,
+    color: C.ink2,
+    letterSpacing: -0.1,
+  },
+  pickerFooterCheck: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: C.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+
+  // ─── Ready ───
+  readyGlow3: {
+    borderRadius: 100,
+    padding: 18,
+    backgroundColor: 'rgba(248,90,62,0.06)',
+  },
+  readyGlow2: {
+    borderRadius: 100,
+    padding: 14,
+    backgroundColor: 'rgba(248,90,62,0.10)',
+  },
+  readyGlow1: {
+    borderRadius: 100,
+    padding: 10,
+    backgroundColor: 'rgba(248,90,62,0.16)',
+  },
+  readyCircle: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    backgroundColor: C.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: C.orange,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  readyTitle: {
+    fontSize: 30,
+    fontFamily: F.bold,
+    color: C.ink,
+    marginTop: 32,
+    marginBottom: 12,
+  },
+  readyBody: {
+    fontSize: 15,
+    fontFamily: F.regular,
+    color: C.ink2,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 16,
   },
 });

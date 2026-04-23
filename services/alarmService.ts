@@ -10,8 +10,18 @@ import {
 import * as TaskManager from 'expo-task-manager';
 import { Alarm } from './storageService';
 import { t } from '../i18n';
+import {
+  loadSnoozeMinutes,
+  getSnoozeMinutesSync,
+  DEFAULT_SNOOZE_MINUTES,
+} from './snoozeIntervalStore';
 
-export const SNOOZE_MINUTES = 5;
+/**
+ * @deprecated Use `getSnoozeMinutesSync()` from snoozeIntervalStore.
+ * Kept as an export for backward compatibility — value reflects the
+ * default; runtime code MUST use the dynamic getter to honor user setting.
+ */
+export const SNOOZE_MINUTES = DEFAULT_SNOOZE_MINUTES;
 const isWeb = Platform.OS === 'web';
 const ALARM_CHANNEL_ID = 'alarm';
 const ALARM_SOUND = 'gentle.wav';
@@ -31,6 +41,9 @@ TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({ data, error }) => 
 
 export async function setupNotifications(): Promise<void> {
   if (isWeb) return;
+  // Hydrate snooze interval cache from AsyncStorage so subsequent
+  // getSnoozeMinutesSync() calls reflect the user setting.
+  await loadSnoozeMinutes();
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -180,7 +193,7 @@ export async function scheduleSnooze(alarm: Alarm): Promise<string> {
     },
     trigger: {
       type: SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: SNOOZE_MINUTES * 60,
+      seconds: getSnoozeMinutesSync() * 60,
       channelId: ALARM_CHANNEL_ID,
     },
     identifier: snoozeId,

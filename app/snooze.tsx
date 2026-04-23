@@ -13,6 +13,7 @@ import {
   getSnoozeCount,
 } from '../services/storageService';
 import { SNOOZE_MINUTES } from '../services/alarmService';
+import { getSnoozeMinutesSync, loadSnoozeMinutes } from '../services/snoozeIntervalStore';
 import { AD_UNIT_IDS } from '../services/adService';
 import AdBanner from '../components/AdBanner';
 import { ThemeColors } from '../constants/colors';
@@ -133,7 +134,7 @@ export default function SnoozeScreen() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const totalSnooze = SNOOZE_MINUTES * 60;
+  const totalSnooze = getSnoozeMinutesSync() * 60;
   const progress = remainingSeconds !== null ? Math.max(0, 1 - remainingSeconds / totalSnooze) : 0;
 
   return (

@@ -9,9 +9,22 @@ import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
+import { VT323_400Regular } from '@expo-google-fonts/vt323';
+import { ShareTechMono_400Regular } from '@expo-google-fonts/share-tech-mono';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+import {
+  ShipporiMincho_500Medium,
+  ShipporiMincho_600SemiBold,
+} from '@expo-google-fonts/shippori-mincho';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
 import { setupNotifications, rescheduleAllAlarms, SNOOZE_MINUTES } from '../services/alarmService';
+import { getSnoozeMinutesSync } from '../services/snoozeIntervalStore';
 import { getAlarms, Alarm } from '../services/storageService';
 import { isAdAvailable, initializeAdMob } from '../services/adService';
 import { ThemeProvider, useTheme } from '../theme';
@@ -38,6 +51,16 @@ export default function RootLayout() {
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
+    // AI OS design tokens
+    VT323_400Regular,
+    ShareTechMono_400Regular,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    // Greeting font (Home screen) — matches design exactly
+    ShipporiMincho_500Medium,
+    ShipporiMincho_600SemiBold,
   });
 
   const onLayoutRootView = useCallback(async () => {
@@ -85,7 +108,7 @@ export default function RootLayout() {
             if (alarm) {
               await incrementSnoozeCount(alarmId);
               await doSnooze(alarm);
-              await saveSnoozeTime(alarmId, Date.now() + SNOOZE_MINUTES * 60 * 1000);
+              await saveSnoozeTime(alarmId, Date.now() + getSnoozeMinutesSync() * 60 * 1000);
             }
           }
           router.push({
@@ -169,15 +192,15 @@ export default function RootLayout() {
 }
 
 function RootLayoutInner({ onLayout }: { onLayout: () => void }) {
-  const { isDark, colors } = useTheme();
-
+  const { isDark } = useTheme();
+  const bg = isDark ? '#111113' : '#F4F4F5';
   return (
-    <View style={{ flex: 1 }} onLayout={onLayout}>
+    <View style={{ flex: 1, backgroundColor: bg }} onLayout={onLayout}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.bgPrimary },
+          contentStyle: { backgroundColor: bg },
           animation: 'fade',
         }}
       >

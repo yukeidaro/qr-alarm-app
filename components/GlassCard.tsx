@@ -37,12 +37,16 @@ export function GlassCard({
   const [reduceTransparency, setReduceTransparency] = useState(false);
 
   useEffect(() => {
+    // Web doesn't support isReduceTransparencyEnabled — guard the call
+    if (typeof AccessibilityInfo.isReduceTransparencyEnabled !== 'function') {
+      return;
+    }
     AccessibilityInfo.isReduceTransparencyEnabled().then(setReduceTransparency);
-    const sub = AccessibilityInfo.addEventListener(
+    const sub = AccessibilityInfo.addEventListener?.(
       'reduceTransparencyChanged',
       setReduceTransparency,
     );
-    return () => sub.remove();
+    return () => sub?.remove?.();
   }, []);
 
   const blurIntensity = isDark ? 30 : 20;

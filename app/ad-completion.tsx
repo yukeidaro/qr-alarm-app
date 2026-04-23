@@ -15,7 +15,7 @@ export default function AdCompletionScreen() {
 
   const handleClose = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.dismissAll();
+    router.replace('/');
   };
 
   return (

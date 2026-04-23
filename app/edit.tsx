@@ -1,131 +1,245 @@
+/**
+ * Edit Screen — Strict PPTX-canonical layout (slide 02 / アラーム編集).
+ *
+ *   ┌─────────────────────────┐
+ *   │                         │
+ *   │   FULLSCREEN WHEEL      │  ← time picker fills upper region
+ *   │   ┌─── 10 : 34 ───┐     │
+ *   │                         │
+ *   ├─────────────────────────┤
+ *   │  ♪    ⏰    ⇄    ▦      │  ← horizontal action bar
+ *   │ Sound Snooze Repeat コード │     (コード設定 has red dot if QR not set)
+ *   ├─────────────────────────┤
+ *   │ ⓘ QRコードを設定しないと… │  ← warning banner (only if QR not set)
+ *   ├─────────────────────────┤
+ *   │ ✕      時刻を選択      ⬤✓ │  ← bottom bar (cancel / label / save)
+ *   └─────────────────────────┘
+ *
+ * Sub-screens are accessed via the action-bar icons:
+ *   - Sound        → /sounds
+ *   - Snooze       → /snooze-interval
+ *   - Repeat       → /repeat
+ *   - コード設定   → /qr-manage
+ */
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  Switch,
-  Alert,
   Platform,
   Animated,
+  Alert,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as ImagePicker from 'expo-image-picker';
 import {
   Alarm,
   getAlarms,
   saveAlarm,
-  deleteAlarm,
   createAlarm,
   getRegisteredQR,
-  getRingingBackground,
-  saveRingingBackground,
-  clearRingingBackground,
+  getRegisteredQRs,
+  RegisteredQR,
+  getCustomSounds,
+  CustomSound,
 } from '../services/storageService';
-import { scheduleAlarm, cancelAlarm } from '../services/alarmService';
 import { getSoundLabel } from '../services/audioService';
-import { getPendingSound, clearPendingSound } from '../services/soundSelectionStore';
-import Button from '../components/Button';
-import { useTheme } from '../theme';
-import { ThemeColors } from '../constants/colors';
-import { FONT_FAMILY, FONT_SIZE } from '../constants/typography';
-import { SPACING, SCREEN_PADDING, RADIUS, SIZE, ACTIVE_OPACITY, ANIMATION } from '../constants/spacing';
-import { t, getDayNames } from '../i18n';
+import { scheduleAlarm, cancelAlarm } from '../services/alarmService';
+import {
+  getPendingSound,
+  clearPendingSound,
+} from '../services/soundSelectionStore';
+import {
+  getPendingRepeatDays,
+  clearPendingRepeatDays,
+} from '../services/repeatSelectionStore';
+import { getPendingQR, clearPendingQR } from '../services/qrSelectionStore';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-const DAYS = getDayNames();
+/* ── Color Palette ── */
+import { useC, type AppPalette, LIGHT_PALETTE } from '../constants/palette';
+const C = LIGHT_PALETTE;
 
-function useToast(colors: ThemeColors) {
-  const translateY = useRef(new Animated.Value(100)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const [message, setMessage] = useState('');
-  const [visible, setVisible] = useState(false);
-  const toastStyles = useMemo(() => makeToastStyles(colors), [colors]);
+const F = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semi: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+};
 
-  const show = (text: string): Promise<void> => {
-    return new Promise((resolve) => {
-      setMessage(text);
-      setVisible(true);
-      translateY.setValue(100);
-      opacity.setValue(0);
-
-      Animated.parallel([
-        Animated.timing(translateY, { toValue: 0, duration: ANIMATION.duration.normal, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 1, duration: ANIMATION.duration.normal, useNativeDriver: true }),
-      ]).start(() => {
-        setTimeout(() => {
-          Animated.timing(opacity, { toValue: 0, duration: ANIMATION.duration.slow, useNativeDriver: true }).start(() => {
-            setVisible(false);
-            resolve();
-          });
-        }, ANIMATION.duration.display);
-      });
-    });
-  };
-
-  const ToastView = visible ? (
-    <Animated.View style={[toastStyles.container, { transform: [{ translateY }], opacity }]} pointerEvents="none">
-      <View style={toastStyles.accentDot} />
-      <Text style={toastStyles.text}>{message}</Text>
-    </Animated.View>
-  ) : null;
-
-  return { show, ToastView };
+/* ── Icons ── */
+function CloseIcon({ color = C.ink2, size = 22 }: { color?: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 5l14 14M19 5L5 19" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
 }
 
-const makeToastStyles = (c: ThemeColors) => StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 100,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: c.bgSecondary,
-    paddingHorizontal: SPACING.xxl,
-    paddingVertical: SPACING.base,
-    borderRadius: RADIUS.full,
-    gap: SPACING.sm,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  accentDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: c.accent,
-  },
-  text: {
-    fontSize: FONT_SIZE.bodySmall,
-    color: c.textPrimary,
-    fontFamily: FONT_FAMILY.medium,
-    textAlign: 'center',
-  },
-});
+function CheckIcon({ color = '#FFFFFF', size = 20 }: { color?: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 12.5l5 5 9-11" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
 
+function SoundActionIcon({ color }: { color: string }) {
+  // Music note (♪)
+  return (
+    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9 18V6l11-2v12"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx={6.5} cy={18} r={2.5} stroke={color} strokeWidth={1.8} />
+      <Circle cx={17.5} cy={16} r={2.5} stroke={color} strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
+function SnoozeActionIcon({ color }: { color: string }) {
+  // Alarm clock
+  return (
+    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={13} r={8} stroke={color} strokeWidth={1.8} />
+      <Path d="M12 9v4l3 2" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M5 5l-2 2M19 5l2 2" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function RepeatActionIcon({ color }: { color: string }) {
+  // Two opposed arrows ⇄
+  return (
+    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 8h13l-3-3M20 16H7l3 3"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function QRActionIcon({ color }: { color: string }) {
+  return (
+    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+      <Rect x={3} y={3} width={7} height={7} rx={1.5} stroke={color} strokeWidth={1.8} />
+      <Rect x={14} y={3} width={7} height={7} rx={1.5} stroke={color} strokeWidth={1.8} />
+      <Rect x={3} y={14} width={7} height={7} rx={1.5} stroke={color} strokeWidth={1.8} />
+      <Rect x={14} y={14} width={3} height={3} rx={0.5} fill={color} />
+      <Rect x={18} y={14} width={3} height={3} rx={0.5} fill={color} />
+      <Rect x={14} y={18} width={3} height={3} rx={0.5} fill={color} />
+      <Rect x={18} y={18} width={3} height={3} rx={0.5} fill={color} />
+    </Svg>
+  );
+}
+
+function WarnIcon() {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <Circle cx={8} cy={8} r={7} stroke={C.orange} strokeWidth={1.6} />
+      <Path d="M8 4.5v4.5M8 11.2v.6" stroke={C.orange} strokeWidth={1.6} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/* ── Action card (icon + label + value/custom right side) ── */
+function ActionCard({
+  icon,
+  label,
+  value,
+  rightExtra,
+  onPress,
+  active = false,
+  dot = false,
+}: {
+  icon: (color: string) => React.ReactNode;
+  label: string;
+  value?: string;
+  rightExtra?: React.ReactNode;
+  onPress: () => void;
+  active?: boolean;
+  dot?: boolean;
+}) {
+  const iconColor = active ? C.orange : C.ink2;
+  return (
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.cardLeft}>
+        <View style={styles.cardIconWrap}>
+          {icon(iconColor)}
+          {dot && <View style={styles.dot} />}
+        </View>
+        <Text style={styles.cardLabel}>{label}</Text>
+      </View>
+      <View style={styles.cardRight}>
+        {rightExtra ? (
+          rightExtra
+        ) : (
+          <Text
+            style={[styles.cardValue, active && { color: C.orange }]}
+            numberOfLines={1}
+          >
+            {value ?? ''}
+          </Text>
+        )}
+        <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+          <Path d="M9 6l6 6-6 6" stroke={C.ink3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+/* ── Day pills (S M T W T F S) for Repeat card ── */
+function DayPills({ days }: { days: number[] }) {
+  // Order: Sun, Mon, Tue, Wed, Thu, Fri, Sat (matches storage 0..6)
+  const labels = ['日', '月', '火', '水', '木', '金', '土'];
+  const set = new Set(days);
+  return (
+    <View style={styles.pillsRow}>
+      {labels.map((l, i) => {
+        const on = set.has(i);
+        return (
+          <View
+            key={i}
+            style={[styles.pill, on ? styles.pillOn : styles.pillOff]}
+          >
+            <Text style={[styles.pillText, on ? styles.pillTextOn : styles.pillTextOff]}>
+              {l}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/* ── Main Screen ── */
 export default function EditScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const isNew = !id;
+  const C = useC();
+  const styles = useMemo(() => makeStyles(C), [C]);
 
   const [alarm, setAlarm] = useState<Alarm>(createAlarm());
-  const [showPicker, setShowPicker] = useState(Platform.OS === 'ios');
   const [hasGlobalQR, setHasGlobalQR] = useState(false);
-  const [bgUri, setBgUri] = useState<string | null>(null);
-  const { show: showToast, ToastView } = useToast(colors);
+  const [qrName, setQrName] = useState<string>('');
+  const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 400,
+      duration: 320,
       useNativeDriver: true,
     }).start();
   }, []);
@@ -137,297 +251,367 @@ export default function EditScreen() {
         if (found) setAlarm(found);
       });
     }
-    getRingingBackground().then(setBgUri);
   }, [id]);
 
   useFocusEffect(
     useCallback(() => {
       getRegisteredQR().then((qr) => setHasGlobalQR(!!qr));
+      getCustomSounds().then(setCustomSounds);
+
+      const pendingSound = getPendingSound();
+      const pendingDays = getPendingRepeatDays();
+      const pendingQR = getPendingQR();
+
+      const applyPending = (base: Alarm): Alarm => {
+        let next = base;
+        if (pendingSound) next = { ...next, soundId: pendingSound };
+        if (pendingDays) next = { ...next, repeatDays: pendingDays };
+        if (pendingQR) next = { ...next, qrCodeData: pendingQR.data };
+        return next;
+      };
+
+      const finalize = (resolved: Alarm) => {
+        // Resolve QR name from current alarm.qrCodeData (or first registered as fallback)
+        getRegisteredQRs().then((qrs: RegisteredQR[]) => {
+          if (resolved.qrCodeData) {
+            const matched = qrs.find((q) => q.data === resolved.qrCodeData);
+            setQrName(matched ? matched.name : '');
+          } else if (qrs.length > 0) {
+            // No explicit selection — show empty so user knows to pick
+            setQrName('');
+          } else {
+            setQrName('');
+          }
+        });
+      };
+
       if (id) {
         getAlarms().then((alarms) => {
           const found = alarms.find((a) => a.id === id);
-          if (found) setAlarm(found);
+          const resolved = found ? applyPending(found) : applyPending(alarm);
+          setAlarm(resolved);
+          finalize(resolved);
+          if (pendingSound) clearPendingSound();
+          if (pendingDays) clearPendingRepeatDays();
+          if (pendingQR) clearPendingQR();
         });
+      } else {
+        setAlarm((prev) => {
+          const next = applyPending(prev);
+          finalize(next);
+          return next;
+        });
+        if (pendingSound) clearPendingSound();
+        if (pendingDays) clearPendingRepeatDays();
+        if (pendingQR) clearPendingQR();
       }
-      // Check for sound selection from sounds screen
-      const pending = getPendingSound();
-      if (pending) {
-        setAlarm((prev) => ({ ...prev, soundId: pending }));
-        clearPendingSound();
-      }
-    }, [id])
+    }, [id]),
   );
 
-  const handlePickBackground = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [9, 19],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      await saveRingingBackground(result.assets[0].uri);
-      setBgUri(result.assets[0].uri);
+  /* ── Display helpers for action sub-labels ── */
+  const soundLabel = (() => {
+    if (alarm.soundId.startsWith('custom_')) {
+      const s = customSounds.find((c) => c.id === alarm.soundId);
+      return s ? s.name : 'カスタム';
+    }
+    return getSoundLabel(alarm.soundId);
+  })();
+
+  const qrLabel = qrName || '未設定';
+
+  const handleSave = async () => {
+    try {
+      await saveAlarm(alarm);
+      if (alarm.enabled) await scheduleAlarm(alarm);
+      else await cancelAlarm(alarm.id);
+      router.back();
+    } catch {
+      Alert.alert('エラー', 'アラームの保存に失敗しました。もう一度お試しください。');
     }
   };
 
-  const handleClearBackground = async () => {
-    await clearRingingBackground();
-    setBgUri(null);
-  };
-
-  const handleSave = async () => {
-    await saveAlarm(alarm);
-    if (alarm.enabled) await scheduleAlarm(alarm);
-    else await cancelAlarm(alarm.id);
-    router.back();
-  };
-
-  const handleDelete = () => {
-    Alert.alert(t.edit.deleteAlarmTitle, t.edit.deleteAlarmMessage, [
-      { text: t.edit.cancel, style: 'cancel' },
-      {
-        text: t.edit.delete,
-        style: 'destructive',
-        onPress: async () => {
-          await cancelAlarm(alarm.id);
-          await deleteAlarm(alarm.id);
-          await showToast(t.toast.deleted);
-          router.back();
-        },
-      },
-    ]);
-  };
-
-  const toggleDay = (day: number) => {
-    setAlarm((prev) => ({
-      ...prev,
-      repeatDays: prev.repeatDays.includes(day)
-        ? prev.repeatDays.filter((d) => d !== day)
-        : [...prev.repeatDays, day].sort(),
-    }));
-  };
-
-  const handleTimeChange = (_: any, date?: Date) => {
-    if (Platform.OS === 'android') setShowPicker(false);
-    if (date) setAlarm((prev) => ({ ...prev, hour: date.getHours(), minute: date.getMinutes() }));
-  };
-
-  const timeDate = new Date();
-  timeDate.setHours(alarm.hour, alarm.minute, 0, 0);
-
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bgPrimary }}>
-      <Animated.ScrollView style={[styles.container, { opacity: fadeAnim }]} contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={ACTIVE_OPACITY.default} style={styles.backButton}>
-            <Text style={styles.backText}>{t.edit.back}</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{isNew ? t.edit.newAlarm : t.edit.editAlarm}</Text>
-          <View style={{ width: 56 }} />
-        </View>
+    <Animated.View style={[styles.root, { opacity: fadeAnim }]}>
+      {/* ── Apple-style native time spinner (fills available space) ── */}
+      <View style={styles.pickerArea}>
+        <DateTimePicker
+          value={(() => {
+            const d = new Date();
+            d.setHours(alarm.hour, alarm.minute, 0, 0);
+            return d;
+          })()}
+          mode="time"
+          display="spinner"
+          is24Hour
+          locale="ja-JP"
+          themeVariant="light"
+          textColor={C.ink}
+          style={styles.spinner}
+          onChange={(_e, date) => {
+            if (!date) return;
+            setAlarm((p) => ({ ...p, hour: date.getHours(), minute: date.getMinutes() }));
+          }}
+        />
+      </View>
 
-        {/* Time Picker */}
-        <View style={styles.timeSection}>
-          {Platform.OS === 'android' && !showPicker && (
-            <TouchableOpacity onPress={() => setShowPicker(true)} activeOpacity={ACTIVE_OPACITY.default}>
-              <Text style={styles.timeDisplay}>
-                {alarm.hour.toString().padStart(2, '0')}:{alarm.minute.toString().padStart(2, '0')}
-              </Text>
+      {/* ── Action List (rich rows) ── */}
+      <View style={styles.actionList}>
+        <ActionCard
+          icon={(c) => <RepeatActionIcon color={c} />}
+          label="繰り返し"
+          rightExtra={<DayPills days={alarm.repeatDays} />}
+          onPress={() =>
+            router.push({ pathname: '/repeat', params: { days: alarm.repeatDays.join(',') } })
+          }
+        />
+        <ActionCard
+          icon={(c) => <SoundActionIcon color={c} />}
+          label="サウンド"
+          value={soundLabel}
+          onPress={() =>
+            router.push({ pathname: '/sounds', params: { currentSoundId: alarm.soundId } })
+          }
+        />
+        <ActionCard
+          icon={(c) => <SnoozeActionIcon color={c} />}
+          label="スヌーズ"
+          value={alarm.snoozeEnabled ? 'オン' : 'オフ'}
+          onPress={() => router.push('/snooze-interval')}
+        />
+        <ActionCard
+          icon={(c) => <QRActionIcon color={c} />}
+          label="コード設定"
+          value={qrLabel}
+          active={hasGlobalQR}
+          dot={!hasGlobalQR}
+          onPress={() => router.push({ pathname: '/qr-manage', params: { mode: 'select' } })}
+        />
+      </View>
+
+      {/* ── Warning Banner (when QR not set) ── */}
+      {!hasGlobalQR && (
+        <View style={styles.warning}>
+          <WarnIcon />
+          <Text style={styles.warningText}>
+            QRコードを設定しないとアラームは機能しません
+          </Text>
+        </View>
+      )}
+
+      {/* ── Bottom Bar (cancel left; large orange save FAB centered) ── */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.bottomClose}
+          activeOpacity={0.6}
+        >
+          <CloseIcon />
+        </TouchableOpacity>
+
+        <View style={styles.bottomCenter}>
+          <View style={styles.fabGlowRing}>
+            <TouchableOpacity
+              onPress={handleSave}
+              style={styles.checkBtn}
+              activeOpacity={0.85}
+            >
+              <CheckIcon size={26} />
             </TouchableOpacity>
-          )}
-          {showPicker && (
-            <DateTimePicker
-              value={timeDate}
-              mode="time"
-              is24Hour={true}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleTimeChange}
-              textColor={colors.textPrimary}
-              themeVariant="light"
-            />
-          )}
-        </View>
-
-        {/* Settings Card */}
-        <View style={styles.settingsCard}>
-          {/* Repeat */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>{t.edit.repeat}</Text>
-            <View style={styles.daysRow}>
-              {DAYS.map((label, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.dayButton, alarm.repeatDays.includes(i) && styles.dayActive]}
-                  onPress={() => toggleDay(i)}
-                  activeOpacity={ACTIVE_OPACITY.default}
-                >
-                  <Text style={[styles.dayText, alarm.repeatDays.includes(i) && styles.dayTextActive]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Sound */}
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push({ pathname: '/sounds', params: { currentSoundId: alarm.soundId } })} activeOpacity={ACTIVE_OPACITY.default}>
-            <Text style={styles.settingLabel}>{t.edit.sound}</Text>
-            <View style={styles.settingValueRow}>
-              <Text style={styles.settingValue}>{getSoundLabel(alarm.soundId)}</Text>
-              <Text style={styles.chevron}>{'>'}</Text>
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Volume */}
-          <View style={styles.section}>
-            <View style={styles.volumeHeader}>
-              <Text style={styles.settingLabel}>{t.edit.volume}</Text>
-              <Text style={styles.volumeValue}>{Math.round((alarm.volume ?? 1.0) * 100)}%</Text>
-            </View>
-            <Slider
-              style={styles.volumeSlider}
-              minimumValue={0.05}
-              maximumValue={1}
-              step={0.05}
-              value={alarm.volume ?? 1.0}
-              onValueChange={(val: number) => setAlarm((prev) => ({ ...prev, volume: val }))}
-              minimumTrackTintColor={colors.accent}
-              maximumTrackTintColor={colors.bgTertiary}
-              thumbTintColor={colors.accent}
-            />
-            <View style={styles.fadeInRow}>
-              <View>
-                <Text style={styles.settingLabel}>{t.edit.fadeIn}</Text>
-                <Text style={styles.settingHint}>{t.edit.fadeInHint}</Text>
-              </View>
-              <Switch
-                value={alarm.fadeIn ?? false}
-                onValueChange={(val) => setAlarm((prev) => ({ ...prev, fadeIn: val }))}
-                trackColor={{ false: colors.bgTertiary, true: colors.accent }}
-                thumbColor={colors.bgSecondary}
-              />
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* QR status — tap to manage */}
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/qr-manage')} activeOpacity={ACTIVE_OPACITY.default}>
-            <Text style={styles.settingLabel}>{t.edit.qrBarcode}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={[styles.statusChip, hasGlobalQR && styles.statusChipActive]}>
-                <Text style={[styles.statusChipText, hasGlobalQR && styles.statusChipTextActive]}>
-                  {hasGlobalQR ? t.edit.qrRegistered : t.edit.qrNotRegistered}
-                </Text>
-              </View>
-              <Text style={{ color: colors.textMuted, fontSize: 18, marginLeft: 8 }}>›</Text>
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Background */}
-          <TouchableOpacity style={styles.settingRow} onPress={handlePickBackground} activeOpacity={ACTIVE_OPACITY.default}>
-            <Text style={styles.settingLabel}>{t.edit.ringingBackground}</Text>
-            <View style={styles.settingValueRow}>
-              <Text style={[styles.settingValue, bgUri && styles.settingValueAccent]}>
-                {bgUri ? t.edit.bgSet : t.edit.bgDefault}
-              </Text>
-            </View>
-          </TouchableOpacity>
-          {bgUri && (
-            <TouchableOpacity style={styles.bgClearButton} onPress={handleClearBackground} activeOpacity={ACTIVE_OPACITY.default}>
-              <Text style={styles.bgClearText}>{t.edit.bgReset}</Text>
-            </TouchableOpacity>
-          )}
-
-          <View style={styles.divider} />
-
-          {/* Snooze toggle */}
-          <View style={styles.settingRow}>
-            <View>
-              <Text style={styles.settingLabel}>{t.edit.snooze}</Text>
-              {!(alarm.snoozeEnabled ?? true) && (
-                <Text style={styles.settingHint}>{t.edit.snoozeOffHint}</Text>
-              )}
-            </View>
-            <Switch
-              value={alarm.snoozeEnabled ?? true}
-              onValueChange={(val) => setAlarm((prev) => ({ ...prev, snoozeEnabled: val }))}
-              trackColor={{ false: colors.bgTertiary, true: colors.accent }}
-              thumbColor={colors.bgSecondary}
-            />
           </View>
         </View>
-
-        {/* Actions */}
-        <View style={styles.actionsSection}>
-          <Button title={t.edit.save} onPress={handleSave} fullWidth />
-          {!isNew && (
-            <Button title={t.edit.delete} onPress={handleDelete} variant="ghost" fullWidth
-              textStyle={{ color: colors.error }}
-              style={{ marginTop: SPACING.sm }}
-            />
-          )}
-        </View>
-      </Animated.ScrollView>
-      {ToastView}
-    </View>
+      </View>
+    </Animated.View>
   );
 }
 
-const makeStyles = (c: ThemeColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: c.bgPrimary },
-  content: { paddingTop: SPACING['7xl'], paddingHorizontal: SCREEN_PADDING.horizontal, paddingBottom: SCREEN_PADDING.bottom },
+/* ── Styles ── */
+const styles = makeStyles(C);
+function makeStyles(C: AppPalette) {
+  return StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: C.bg,
+    ...Platform.select({ ios: { paddingTop: 50 }, android: { paddingTop: 28 } }),
+  },
 
-  // ─── Header ───
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.xl },
-  backButton: { paddingVertical: SPACING.xs, paddingRight: SPACING.lg },
-  backText: { fontSize: FONT_SIZE.bodySmall, color: c.accentSubtle, fontFamily: FONT_FAMILY.medium },
-  headerTitle: { fontSize: FONT_SIZE.body, color: c.textPrimary, fontFamily: FONT_FAMILY.semiBold },
+  /* Native spinner picker area — fixed-ish height so cards have room */
+  pickerArea: {
+    height: 240,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingTop: 0,
+  },
+  spinner: {
+    width: '100%',
+    height: 240,
+  },
 
-  // ─── Time ───
-  timeSection: { alignItems: 'center', marginBottom: SPACING['4xl'], paddingVertical: SPACING.xl },
-  timeDisplay: { fontSize: FONT_SIZE.hero, fontFamily: FONT_FAMILY.bold, color: c.textPrimary, letterSpacing: 4 },
+  /* Action List (rich row cards) */
+  actionList: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    gap: 10,
+    backgroundColor: C.bg,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: C.surface,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: C.lineSoft,
+  },
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flexShrink: 0,
+  },
+  cardRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+    marginLeft: 12,
+  },
+  cardIconWrap: {
+    position: 'relative',
+    width: 26,
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardLabel: {
+    fontSize: 15,
+    color: C.ink,
+    fontFamily: F.semi,
+    fontWeight: '600',
+  },
+  cardValue: {
+    fontSize: 14,
+    color: C.ink2,
+    fontFamily: F.medium,
+    fontWeight: '500',
+    maxWidth: 180,
+    textAlign: 'right',
+  },
+  dot: {
+    position: 'absolute',
+    top: -2,
+    right: -3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.orange,
+    borderWidth: 1.5,
+    borderColor: C.surface,
+  },
 
-  // ─── Settings Card ───
-  settingsCard: { backgroundColor: c.bgSecondary, borderRadius: RADIUS.base, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xs, marginBottom: SPACING.xxl },
-  section: { paddingVertical: SPACING.lg },
-  sectionLabel: { fontSize: FONT_SIZE.labelSmall, color: c.textMuted, letterSpacing: 1, fontFamily: FONT_FAMILY.medium, textTransform: 'uppercase', marginBottom: SPACING.base },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.bgTertiary },
-  daysRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  dayButton: { width: SIZE.dayButton, height: SIZE.dayButton, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bgTertiary },
-  dayActive: { backgroundColor: c.accent },
-  dayText: { fontSize: FONT_SIZE.label, color: c.textMuted, fontFamily: FONT_FAMILY.medium },
-  dayTextActive: { color: c.accentText, fontFamily: FONT_FAMILY.semiBold },
+  /* Day pills inside Repeat card */
+  pillsRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  pill: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillOn: {
+    backgroundColor: C.orange,
+  },
+  pillOff: {
+    backgroundColor: C.surfaceAlt,
+    borderWidth: 1,
+    borderColor: C.line,
+  },
+  pillText: {
+    fontSize: 10,
+    fontFamily: F.bold,
+    fontWeight: '700',
+  },
+  pillTextOn: {
+    color: '#FFFFFF',
+  },
+  pillTextOff: {
+    color: C.ink3,
+  },
 
-  // ─── Setting Rows ───
-  settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SPACING.lg },
-  settingLabel: { fontSize: FONT_SIZE.bodySmall, color: c.textPrimary, fontFamily: FONT_FAMILY.regular },
-  settingValueRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
-  settingValue: { fontSize: FONT_SIZE.bodySmall, color: c.textMuted, fontFamily: FONT_FAMILY.regular },
-  settingValueAccent: { color: c.accentSubtle },
-  chevron: { fontSize: FONT_SIZE.label, color: c.textMuted, fontFamily: FONT_FAMILY.regular, opacity: 0.5 } as const,
-  statusChip: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xxs, borderRadius: RADIUS.full, backgroundColor: c.bgTertiary },
-  statusChipActive: { backgroundColor: c.overlay.accent10 },
-  statusChipText: { fontSize: FONT_SIZE.labelSmall, color: c.textMuted, fontFamily: FONT_FAMILY.regular },
-  statusChipTextActive: { color: c.accentSubtle },
-  bgClearButton: { paddingBottom: SPACING.sm },
-  bgClearText: { fontSize: FONT_SIZE.label, color: c.error, fontFamily: FONT_FAMILY.regular },
-  settingHint: { fontSize: FONT_SIZE.labelSmall, color: c.textMuted, fontFamily: FONT_FAMILY.regular, marginTop: SPACING.xxs },
+  /* Warning Banner */
+  warning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: C.warnBg,
+    marginHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 12,
+    color: C.warnInk,
+    fontFamily: F.semi,
+    fontWeight: '600',
+    lineHeight: 17,
+  },
 
-  // ─── Volume ───
-  volumeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  volumeValue: { fontSize: FONT_SIZE.bodySmall, color: c.accentSubtle, fontFamily: FONT_FAMILY.semiBold },
-  volumeSlider: { width: '100%', height: 40, marginTop: SPACING.xs },
-  fadeInRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.sm },
-
-  // ─── Actions ───
-  actionsSection: { marginTop: SPACING.xl },
+  /* Bottom Bar */
+  bottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 52 : 40,
+    backgroundColor: C.bg,
+  },
+  bottomClose: {
+    position: 'absolute',
+    left: 16,
+    bottom: Platform.OS === 'ios' ? 52 : 40,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabGlowRing: {
+    borderRadius: 999,
+    padding: 6,
+    backgroundColor: 'rgba(248,90,62,0.08)',
+  },
+  checkBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: C.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: C.orange,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.22,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
 });
+}

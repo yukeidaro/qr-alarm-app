@@ -12,6 +12,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.yuasano.qralarm",
+      "buildNumber": "35",
       "locales": {
         "ja": "./locales/ja.json",
         "en": "./locales/en.json",
@@ -27,7 +28,10 @@
           "es"
         ],
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["audio", "remote-notification"],
+        "UIBackgroundModes": [
+          "audio",
+          "remote-notification"
+        ],
         "NSCameraUsageDescription": "Camera is required to scan QR codes and barcodes to dismiss alarms."
       }
     },

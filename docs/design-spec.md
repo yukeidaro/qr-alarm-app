@@ -265,3 +265,98 @@ Inactive tab: icon outline + muted gray + no dot
 - Light mode: `<StatusBar style="dark" />`
 - Dark mode: `<StatusBar style="light" />`
 - Dynamic: `<StatusBar style={isDark ? 'light' : 'dark'} />`
+
+---
+
+## 5. Video Reference: Alarm App Inspiration (2026-04-16)
+
+Source: [video-design-spec.md](video-design-spec.md) -- Threads投稿 @slava7118 "Vibe Code Fully Working Apps" から抽出
+
+### 採用候補コンポーネント
+
+#### 5a. Barcode Decoration（新規追加提案）
+
+QRコードスキャンアプリとの親和性が高い装飾要素。
+
+```typescript
+// constants/barcode-decoration.ts
+export const BARCODE_CONFIG = {
+  lineCount: 24,               // 縦線の本数
+  lineWidthRange: [1, 4],      // 太さのレンジ (px)
+  height: 48,                  // 装飾の高さ
+  accentLineIndex: 'random',   // 1本だけアクセントカラー
+  colors: {
+    light: {
+      lines: '#D5D0CB',        // ライトグレー
+      accent: '#E8A838',       // ゴールド（既存accent）
+    },
+    dark: {
+      lines: '#3A3735',        // ダークグレー
+      accent: '#E8A838',       // ゴールド
+    },
+  },
+} as const;
+```
+
+配置案: アラームカードの装飾、または時刻表示の下
+
+#### 5b. Dot Matrix Animation（Nothing Clock拡張）
+
+既存のNothing Phone風ドットスタイルと完全に合致するアニメーション。
+
+```typescript
+// アニメーション仕様
+export const DOT_MATRIX_ANIMATION = {
+  dotSize: 5,                  // px
+  gridGap: 2,                  // px
+  fps: 10,                     // レトロ感のある低fps
+  colors: {
+    light: {
+      grid: '#EDE8E3',         // bgTertiary
+      active: '#1A1A1A',       // textPrimary
+    },
+    dark: {
+      grid: '#252220',         // bgSecondary
+      active: '#F0EBE5',       // textPrimary
+    },
+  },
+} as const;
+```
+
+用途: アラーム待機画面のアンビエント、作成中のフィードバック
+
+#### 5c. Floating Info Card
+
+```typescript
+export const FLOATING_CARD_STYLE = {
+  borderRadius: 14,
+  padding: 16,
+  shadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+  },
+  animation: {
+    type: 'spring',
+    damping: 0.7,
+    stiffness: 300,
+    duration: 350,             // ms fallback
+  },
+} as const;
+```
+
+#### 5d. Dynamic Theme Color (将来検討)
+
+動画ではカラーピッカーで5テーマ切替。ScanAlarmではlight/darkの2テーマだが、
+アクセントカラー選択（ゴールド以外にも選べる）として導入可能。
+
+```typescript
+// 将来実装時の型定義
+type AccentPreset = 'gold' | 'coral' | 'sage' | 'lavender' | 'sky';
+```
+
+### 参照先
+
+- 詳細なデザイン抽出: [video-design-spec.md](video-design-spec.md)
+- 抽出元フレーム: `assets/screenshots/frames/`

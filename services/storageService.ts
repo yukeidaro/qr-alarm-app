@@ -13,6 +13,8 @@ export interface Alarm {
   snoozeUsed: boolean;
   volume: number; // 0.0–1.0
   fadeIn: boolean; // gradually increase volume over 30s
+  /** Video参照のビビッドテーマキー (alarmThemes.ts) - default 'classic' */
+  theme?: string;
 }
 
 const ALARMS_KEY = '@qralarm/alarms';
@@ -22,10 +24,14 @@ const CUSTOM_SOUNDS_KEY = '@qralarm/custom_sounds';
 const RINGING_BG_KEY = '@qralarm/ringing_bg';
 const SNOOZE_COUNT_KEY = '@qralarm/snooze_count';
 
+export type RegisteredQRKind = 'qr' | 'barcode';
+
 export interface RegisteredQR {
   id: string;
   name: string;
   data: string; // barcode/QR raw data
+  /** 'qr' (2D QR code) or 'barcode' (1D linear barcode like EAN/UPC/Code128). Older entries may be undefined → treat as 'qr'. */
+  kind?: RegisteredQRKind;
 }
 
 export interface CustomSound {
@@ -105,7 +111,14 @@ export async function saveRegisteredQR(data: string): Promise<void> {
 // Multi-QR support
 export async function getRegisteredQRs(): Promise<RegisteredQR[]> {
   const raw = await AsyncStorage.getItem(QR_LIST_KEY);
-  if (raw) return JSON.parse(raw);
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      console.error('[Storage] Corrupted QR data, resetting');
+      await AsyncStorage.removeItem(QR_LIST_KEY);
+    }
+  }
   // Migrate legacy single QR if exists
   const legacy = await AsyncStorage.getItem(QR_KEY);
   if (legacy) {
@@ -140,9 +153,24 @@ export async function getRegisteredQRById(id: string): Promise<RegisteredQR | nu
   return qrs.find((q) => q.id === id) || null;
 }
 
+export async function renameRegisteredQR(id: string, newName: string): Promise<void> {
+  const qrs = await getRegisteredQRs();
+  const trimmed = newName.trim();
+  if (!trimmed) return;
+  const updated = qrs.map((q) => (q.id === id ? { ...q, name: trimmed } : q));
+  await AsyncStorage.setItem(QR_LIST_KEY, JSON.stringify(updated));
+}
+
 export async function getCustomSounds(): Promise<CustomSound[]> {
   const raw = await AsyncStorage.getItem(CUSTOM_SOUNDS_KEY);
-  return raw ? JSON.parse(raw) : [];
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.error('[Storage] Corrupted custom sounds data, resetting');
+    await AsyncStorage.removeItem(CUSTOM_SOUNDS_KEY);
+    return [];
+  }
 }
 
 export async function saveCustomSound(sound: CustomSound): Promise<void> {

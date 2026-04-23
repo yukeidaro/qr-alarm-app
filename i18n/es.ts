@@ -13,6 +13,7 @@ export const es = {
   home: {
     qrRegistered: '✓ QR',
     qrRegister: 'QR Config.',
+    qrNotSet: 'Sin configurar',
     alarms: 'Alarmas',
 
     emptyTitle: 'Crea tu primera alarma',
@@ -21,9 +22,8 @@ export const es = {
 
   onboarding: {
     title: 'Registrar QR / código de barras',
-    description: 'Registra un código QR o de barras para desactivar tu alarma.',
+    description: 'Registra un código QR o de barras para desactivar tu alarma. Un cepillo de dientes, una botella de agua o el código de barras de cualquier producto comercial sirven perfectamente.',
     registerNow: 'Registrar ahora',
-    later: 'Más tarde',
   },
 
   onboardingFlow: {
@@ -271,6 +271,8 @@ export const es = {
     voice_cheerful_en_3: 'Alegre 3 (EN)',
     voice_okiro_ja: '¡Despierta! (JA)',
   } as Record<string, string>,
+
+  soundDescriptions: {} as Record<string, string>,
 
   // Settings
   settings: {
