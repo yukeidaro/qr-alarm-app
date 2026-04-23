@@ -46,7 +46,7 @@ import {
   CustomSound,
 } from '../services/storageService';
 import { getSoundLabel } from '../services/audioService';
-import { scheduleAlarm, cancelAlarm } from '../services/alarmService';
+import { scheduleAlarm } from '../services/alarmService';
 import {
   getPendingSound,
   clearPendingSound,
@@ -321,9 +321,9 @@ export default function EditScreen() {
 
   const handleSave = async () => {
     try {
-      await saveAlarm(alarm);
-      if (alarm.enabled) await scheduleAlarm(alarm);
-      else await cancelAlarm(alarm.id);
+      const updated = { ...alarm, enabled: true };
+      await saveAlarm(updated);
+      await scheduleAlarm(updated);
       router.back();
     } catch {
       Alert.alert('エラー', 'アラームの保存に失敗しました。もう一度お試しください。');

@@ -17,6 +17,7 @@ export const ja = {
     qrRegistered: '✓ QR',
     qrRegister: 'QR登録',
     qrNotSet: '未設定です',
+    qrNotSetWarning: '未設定です。設定してください',
     alarms: 'アラーム',
 
     emptyTitle: '最初のアラームを作成',

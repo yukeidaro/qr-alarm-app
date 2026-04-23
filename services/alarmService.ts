@@ -129,7 +129,11 @@ export async function scheduleAlarm(alarm: Alarm): Promise<string> {
     sound: ALARM_SOUND,
     categoryIdentifier: 'alarm',
     sticky: true, // Keep notification visible until user interacts
-    ...(Platform.OS === 'ios' && { interruptionLevel: 'timeSensitive' }),
+    // 'timeSensitive' bypasses Focus modes (where allowed) without requiring
+    // the restricted critical-alerts entitlement. The actual music
+    // preemption is handled by the audio session category (DoNotMix) in
+    // services/audioService.ts when the ringing screen starts playback.
+    ...(Platform.OS === 'ios' && { interruptionLevel: 'timeSensitive' as any }),
   };
 
   if (alarm.repeatDays.length > 0) {
@@ -189,7 +193,7 @@ export async function scheduleSnooze(alarm: Alarm): Promise<string> {
       sound: ALARM_SOUND,
       categoryIdentifier: 'alarm',
       sticky: true,
-      ...(Platform.OS === 'ios' && { interruptionLevel: 'timeSensitive' }),
+      ...(Platform.OS === 'ios' && { interruptionLevel: 'timeSensitive' as any }),
     },
     trigger: {
       type: SchedulableTriggerInputTypes.TIME_INTERVAL,

@@ -134,13 +134,8 @@ function getNextAlarmLabel(alarms: Alarm[]): string | null {
   return m === 0 ? `${h}時間` : `${h}時間${m}分`;
 }
 
-function formatTime12(h: number, m: number): { time: string; period: string } {
-  const period = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 || 12;
-  return {
-    time: `${h12}:${m.toString().padStart(2, '0')}`,
-    period,
-  };
+function formatTime24(h: number, m: number): string {
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
 // Smart day-label formatter — mirrors design HomeScreen ("月〜金" / "土 日" / "毎日").
@@ -413,7 +408,7 @@ export default function HomeScreen() {
   const nextAlarmLabel = getNextAlarmLabel(alarms);
 
   const renderAlarmCard = ({ item: alarm, index }: { item: Alarm; index: number }) => {
-    const { time, period } = formatTime12(alarm.hour, alarm.minute);
+    const time = formatTime24(alarm.hour, alarm.minute);
     const dayText = getActiveDayLabels(alarm.repeatDays);
     const hasQR = !!(alarm as any).qrCodeData;
     const isBarcode = hasQR && qrKindMap[(alarm as any).qrCodeData] === 'barcode';
@@ -449,7 +444,6 @@ export default function HomeScreen() {
             <View style={styles.cardLeft}>
               <View style={styles.timeRow}>
                 <Text style={styles.timeText}>{time}</Text>
-                <Text style={styles.periodText}>{period}</Text>
               </View>
               {dayText ? (
                 <Text style={styles.dayText}>{dayText}</Text>
@@ -465,7 +459,7 @@ export default function HomeScreen() {
                 </View>
               ) : (
                 <View style={styles.qrBadgeWarn}>
-                  <Text style={styles.qrBadgeWarnText}>{t.home.qrNotSet}</Text>
+                  <Text style={styles.qrBadgeWarnText}>{t.home.qrNotSetWarning}</Text>
                 </View>
               )}
             </View>
@@ -674,11 +668,6 @@ function makeStyles(C: AppPalette) {
     letterSpacing: -1.4,
     lineHeight: 54,
   },
-  periodText: {
-    fontFamily: F.medium,
-    fontSize: 14,
-    color: C.ink3,
-  },
   dayText: {
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontSize: 12,
@@ -716,8 +705,8 @@ function makeStyles(C: AppPalette) {
   },
   qrBadgeWarnText: {
     fontFamily: F.bold,
-    fontSize: 11,
-    color: C.warnInk,
+    fontSize: 12,
+    color: C.orange,
     letterSpacing: 0.2,
   },
 

@@ -12,7 +12,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.yuasano.qralarm",
-      "buildNumber": "36",
+      "buildNumber": "40",
       "locales": {
         "ja": "./locales/ja.json",
         "en": "./locales/en.json",

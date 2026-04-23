@@ -209,7 +209,7 @@ export default function RingingScreen() {
         <Animated.View style={{ transform: [{ scale: clockPulse }] }}>
           <PixelClock
             time={displayTime}
-            size={140}
+            size={108}
             color={ringingAccent.hex}
             glow={ringingAccent.hex}
           />

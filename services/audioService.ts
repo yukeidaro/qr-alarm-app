@@ -1,4 +1,4 @@
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SOUND_CATALOG } from '../constants/sounds';
@@ -27,27 +27,34 @@ export async function getSoundOutputMode(): Promise<SoundOutputMode> {
 
 export async function configureAudio(outputMode?: SoundOutputMode): Promise<void> {
   const mode = outputMode ?? await getSoundOutputMode();
+
+  // iOS audio routing trick:
+  // expo-av's setAudioModeAsync does NOT expose a direct "force built-in
+  // speaker, ignore Bluetooth" option. The reliable workaround is to switch
+  // the AVAudioSession category by toggling allowsRecordingIOS:
+  //   - allowsRecordingIOS: true  → session category becomes PlayAndRecord,
+  //     which on iPhone defaults to the bottom speaker and skips Bluetooth
+  //     A2DP output (no mic is actually used; we never start a recording).
+  //   - allowsRecordingIOS: false → standard Playback category, which
+  //     happily routes to connected Bluetooth / AirPods.
+  // We must NOT immediately re-set allowsRecordingIOS to false afterwards —
+  // doing so reverts the category and audio goes back to Bluetooth.
+  //
+  // For 'device'    → force bottom speaker (PlayAndRecord category).
+  // For 'bluetooth' → allow Bluetooth routing (Playback category).
+  // For 'auto'      → allow Bluetooth routing; iOS will fall back to
+  //                   speaker automatically if no BT device is connected.
+  const forceDeviceSpeaker = mode === 'device';
+
   await Audio.setAudioModeAsync({
     playsInSilentModeIOS: true,
     staysActiveInBackground: true,
     shouldDuckAndroid: false,
-    // When 'device' is selected, allowsRecordingIOS can force audio to
-    // the built-in speaker on some iOS versions by switching the audio
-    // session category, bypassing Bluetooth output.
-    allowsRecordingIOS: mode === 'device',
+    allowsRecordingIOS: forceDeviceSpeaker,
     playThroughEarpieceAndroid: false,
+    interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+    interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
   });
-  // If we used the recording trick, immediately disable it to avoid
-  // side-effects on the actual audio session (no mic needed).
-  if (mode === 'device') {
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: true,
-      shouldDuckAndroid: false,
-      allowsRecordingIOS: false,
-      playThroughEarpieceAndroid: false,
-    });
-  }
 }
 
 export async function playAlarm(

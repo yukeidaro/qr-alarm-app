@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useC, type AppPalette, LIGHT_PALETTE } from '../constants/palette';
+import { configureAudio } from '../services/audioService';
 
 const SOUND_OUTPUT_KEY = '@qralarm/sound_output';
 type Mode = 'device' | 'bluetooth' | 'auto';
@@ -141,6 +142,13 @@ export default function SoundOutputScreen() {
   const handleSelect = async (mode: Mode) => {
     setSelected(mode);
     await AsyncStorage.setItem(SOUND_OUTPUT_KEY, mode);
+    // Re-apply the iOS audio session category immediately so the choice
+    // takes effect without needing to restart the app.
+    try {
+      await configureAudio(mode);
+    } catch {
+      // Non-fatal — will be re-applied on next playAlarm/previewSound.
+    }
   };
 
   return (

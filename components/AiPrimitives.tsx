@@ -38,6 +38,9 @@ export function PixelClock({
   return (
     <Text
       allowFontScaling={false}
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.5}
       style={[
         styles.pixelClock,
         {

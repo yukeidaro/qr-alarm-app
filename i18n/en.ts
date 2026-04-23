@@ -17,6 +17,7 @@ export const en = {
     qrRegistered: '✓ QR',
     qrRegister: 'QR Setup',
     qrNotSet: 'Not set',
+    qrNotSetWarning: 'Not set. Please set it.',
     alarms: 'Alarms',
 
     emptyTitle: 'Create your first alarm',
