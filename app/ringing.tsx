@@ -101,7 +101,9 @@ export default function RingingScreen() {
       const volume = alarm?.volume ?? 1.0;
       const useFadeIn = alarm?.fadeIn ?? false;
       getSoundOutputMode().then((mode) => {
-        playAlarm(soundId, undefined, volume, useFadeIn, mode);
+        playAlarm(soundId, undefined, volume, useFadeIn, mode).catch((e) => {
+          console.warn('[ringing] playAlarm failed', e);
+        });
       });
       // Stop sound when leaving (e.g., when navigating to scan screen)
       // It will resume on refocus because this effect re-runs.

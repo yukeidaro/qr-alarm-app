@@ -12,7 +12,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.yuasano.qralarm",
-      "buildNumber": "40",
+      "buildNumber": "41",
       "locales": {
         "ja": "./locales/ja.json",
         "en": "./locales/en.json",
@@ -32,7 +32,8 @@
           "audio",
           "remote-notification"
         ],
-        "NSCameraUsageDescription": "Camera is required to scan QR codes and barcodes to dismiss alarms."
+        "NSCameraUsageDescription": "Camera is required to scan QR codes and barcodes to dismiss alarms.",
+        "NSMicrophoneUsageDescription": "Microphone permission is requested only to allow the alarm to play through the iPhone's built-in speaker when Bluetooth audio is connected. The microphone is never actually recorded from."
       }
     },
     "android": {

@@ -35,10 +35,9 @@ export async function configureAudio(outputMode?: SoundOutputMode): Promise<void
   //   - allowsRecordingIOS: true  → session category becomes PlayAndRecord,
   //     which on iPhone defaults to the bottom speaker and skips Bluetooth
   //     A2DP output (no mic is actually used; we never start a recording).
+  //     Requires NSMicrophoneUsageDescription in Info.plist.
   //   - allowsRecordingIOS: false → standard Playback category, which
   //     happily routes to connected Bluetooth / AirPods.
-  // We must NOT immediately re-set allowsRecordingIOS to false afterwards —
-  // doing so reverts the category and audio goes back to Bluetooth.
   //
   // For 'device'    → force bottom speaker (PlayAndRecord category).
   // For 'bluetooth' → allow Bluetooth routing (Playback category).
@@ -46,15 +45,35 @@ export async function configureAudio(outputMode?: SoundOutputMode): Promise<void
   //                   speaker automatically if no BT device is connected.
   const forceDeviceSpeaker = mode === 'device';
 
-  await Audio.setAudioModeAsync({
+  const baseConfig = {
     playsInSilentModeIOS: true,
     staysActiveInBackground: true,
     shouldDuckAndroid: false,
-    allowsRecordingIOS: forceDeviceSpeaker,
     playThroughEarpieceAndroid: false,
     interruptionModeIOS: InterruptionModeIOS.DoNotMix,
     interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-  });
+  };
+
+  try {
+    await Audio.setAudioModeAsync({
+      ...baseConfig,
+      allowsRecordingIOS: forceDeviceSpeaker,
+    });
+  } catch (e) {
+    // SAFETY FALLBACK: if PlayAndRecord category fails (e.g. missing
+    // mic permission/Info.plist entry on older builds), retry with
+    // allowsRecordingIOS:false so the alarm STILL plays through whatever
+    // route iOS chooses. Better to ring on Bluetooth than not at all.
+    console.warn('[audioService] setAudioModeAsync failed, falling back', e);
+    try {
+      await Audio.setAudioModeAsync({
+        ...baseConfig,
+        allowsRecordingIOS: false,
+      });
+    } catch (e2) {
+      console.warn('[audioService] fallback setAudioModeAsync also failed', e2);
+    }
+  }
 }
 
 export async function playAlarm(
